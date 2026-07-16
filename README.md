@@ -32,8 +32,7 @@ was deliberately simplified for this pass.
 cd studio/backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-pytest -q                                   # 23 backend tests
-uvicorn app.main:app --reload --port 8000
+
 # open http://localhost:8000
 ```
 
@@ -81,7 +80,7 @@ docker compose up --build
 See [`DEVPOST_SUBMISSION.md`](DEVPOST_SUBMISSION.md) for the project pitch,
 track rationale, GPT-5.6/Codex usage notes, supported platforms, demo video
 script, judge test plan, and submission checklist. Use `scripts/hard_mode_test.py`
-for a competition-style stress run before final submission.
+
 
 ## How GPT-5.6 and Codex are used
 

@@ -47,7 +47,7 @@ cd studio/backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 pytest -q
-uvicorn app.main:app --reload --port 8000
+
 # open http://localhost:8000
 ```
 
@@ -66,6 +66,7 @@ python scripts/judge_smoke.py
 
 The smoke test runs specify → approve → generate → validate → results → download,
 then creates a second similar project to prove Engineering Knowledge Graph reuse.
+
 
 ### Option D — hard-mode competition simulation
 

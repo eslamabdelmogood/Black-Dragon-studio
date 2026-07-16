@@ -10,6 +10,7 @@ This script intentionally exercises the project like a skeptical hackathon judge
 from __future__ import annotations
 
 import io
+main
 import os
 import shutil
 import subprocess
@@ -37,6 +38,7 @@ os.environ["BDS_WORKSPACE_ROOT"] = str(WORKSPACE)
 shutil.rmtree(WORKSPACE, ignore_errors=True)
 sys.path.insert(0, str(BACKEND))
 
+ main
 from fastapi.testclient import TestClient  # noqa: E402
 from app.main import app  # noqa: E402
 

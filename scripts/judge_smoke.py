@@ -7,8 +7,7 @@ Runs the full lifecycle in-process with FastAPI TestClient:
 """
 from __future__ import annotations
 
-import os
-import shutil
+
 import sys
 from pathlib import Path
 
@@ -21,6 +20,7 @@ os.environ["BDS_WORKSPACE_ROOT"] = str(WORKSPACE)
 shutil.rmtree(WORKSPACE, ignore_errors=True)
 sys.path.insert(0, str(BACKEND))
 
+ main
 from fastapi.testclient import TestClient  # noqa: E402
 from app.main import app  # noqa: E402
 
