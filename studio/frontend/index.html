@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Black Dragon Studio</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<div id="app">
+
+  <nav class="topbar">
+    <div class="brand">🐉 <span>Black Dragon Studio</span></div>
+    <div class="tagline">Describe the physical system. Generate the architecture. Run the simulation. Export the project.</div>
+  </nav>
+
+  <!-- SCREEN 1: HOME -->
+  <section id="screen-home" class="screen active">
+    <div class="panel narrow">
+      <h1>Build a Physical AI monitoring prototype from plain English</h1>
+      <p class="muted">Industrial machine monitoring: pump vibration, motor temperature, bearing faults, pipeline pressure, structural panels.</p>
+      <textarea id="promptInput" rows="6" placeholder="Describe the physical system you want to monitor..."></textarea>
+      <div class="examples">
+        <span class="muted">Try:</span>
+        <button class="chip" data-example="1">Pump vibration + temperature</button>
+        <button class="chip" data-example="2">Motor overcurrent protection</button>
+        <button class="chip" data-example="3">Pipeline pressure monitoring</button>
+      </div>
+      <button id="createProjectBtn" class="primary">Create Project</button>
+      <p id="homeError" class="error"></p>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: SPEC REVIEW -->
+  <section id="screen-spec" class="screen">
+    <div class="panel">
+      <h2>Review specification</h2>
+      <p class="muted">Codex will not generate anything until you approve this specification.</p>
+      <div id="specSummary"></div>
+      <div class="row gap">
+        <button id="approveBtn" class="primary">Approve &amp; Generate</button>
+        <button id="backHomeBtn" class="ghost">Start over</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: GENERATION PROGRESS -->
+  <section id="screen-progress" class="screen">
+    <div class="panel narrow">
+      <h2>Generating your project</h2>
+      <ul id="stageList" class="stage-list"></ul>
+      <p id="progressError" class="error"></p>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: PROJECT WORKSPACE -->
+  <section id="screen-workspace" class="screen">
+    <div class="panel wide">
+      <h2 id="workspaceTitle">Project workspace</h2>
+      <div class="tabs">
+        <button class="tab active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="architecture">Architecture</button>
+        <button class="tab" data-tab="configuration">Configuration</button>
+        <button class="tab" data-tab="simulation">Simulation</button>
+        <button class="tab" data-tab="tests">Tests</button>
+        <button class="tab" data-tab="files">Files</button>
+        <button class="tab" data-tab="export">Export</button>
+      </div>
+
+      <div id="tab-overview" class="tab-content active"></div>
+      <div id="tab-architecture" class="tab-content"><pre id="architectureView" class="code"></pre></div>
+      <div id="tab-configuration" class="tab-content"></div>
+      <div id="tab-simulation" class="tab-content">
+        <div class="row gap">
+          <label>Scenario:
+            <select id="scenarioSelect"></select>
+          </label>
+          <button id="rerunSimBtn" class="ghost">Re-run simulation</button>
+        </div>
+        <div id="simMetrics"></div>
+        <table id="timelineTable" class="data-table">
+          <thead><tr><th>Step</th><th>Rule</th><th>Severity</th><th>Mode</th><th>Action</th><th>Reason</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="tab-tests" class="tab-content"></div>
+      <div id="tab-files" class="tab-content">
+        <div class="files-layout">
+          <ul id="fileTree" class="file-tree"></ul>
+          <pre id="fileContent" class="code"></pre>
+        </div>
+      </div>
+      <div id="tab-export" class="tab-content">
+        <p class="muted">Download the full runnable project, including source, config, simulation, tests, dashboard, README, architecture diagram and generation manifest.</p>
+        <button id="downloadBtn" class="primary">Download ZIP</button>
+        <h3>Setup command</h3>
+        <pre class="code" id="setupCmd"></pre>
+        <h3>Generation manifest</h3>
+        <pre class="code" id="manifestView"></pre>
+        <h3>Warnings &amp; limitations</h3>
+        <ul id="warningsList"></ul>
+      </div>
+    </div>
+  </section>
+
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

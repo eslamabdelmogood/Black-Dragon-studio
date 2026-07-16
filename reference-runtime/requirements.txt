@@ -1,0 +1,5 @@
+numpy>=1.24
+flask>=2.3
+flask-cors>=4.0
+psutil>=5.9
+oss2>=2.18          # Alibaba Cloud OSS SDK, used by deploy/alibaba_oss_telemetry.py

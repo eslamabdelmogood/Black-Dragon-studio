@@ -1,0 +1,34 @@
+"""Structured event logging for the generated project.
+
+Every event is a plain JSON-serializable dict written as one line of a
+JSONL event log, plus kept in memory for the in-process simulation
+timeline. Deliberately does not use Python's stdlib `logging` module name
+collision issues -- this module is named `logging.py` per the constitution's
+required project structure but only exposes `EventLog`, so shadowing the
+stdlib module is contained to this package's namespace.
+"""
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
+
+
+@dataclass
+class EventLog:
+    events: List[Dict[str, Any]] = field(default_factory=list)
+
+    def record(self, **fields: Any) -> None:
+        self.events.append(fields)
+
+    def write_jsonl(self, path: str) -> None:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            for e in self.events:
+                f.write(json.dumps(e) + "\n")
+
+    def write_json(self, path: str) -> None:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.events, f, indent=2)

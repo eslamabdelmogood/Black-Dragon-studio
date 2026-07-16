@@ -1,0 +1,83 @@
+"""Layer A -- Sensing.
+
+Defines sensor channels from config and produces simulated readings.
+On real hardware, `read_live()` would be replaced by an actual driver;
+`SimulatedSensor` is provided so every generated project is runnable and
+testable with zero physical hardware, per constitution 6.4.
+"""
+from __future__ import annotations
+
+import math
+import random
+from dataclasses import dataclass
+from typing import Dict, List
+
+
+@dataclass
+class SensorChannel:
+    id: str
+    type: str
+    unit: str
+    sample_rate_hz: float
+    normal_range: List[float]
+    warning_threshold: float
+    critical_threshold: float
+
+
+def load_sensors(cfg: Dict) -> List[SensorChannel]:
+    return [SensorChannel(**s) for s in cfg.get("sensors", [])]
+
+
+class SimulatedSensor:
+    """Deterministic synthetic signal generator for one channel.
+
+    Scenarios:
+      - "normal": stays within normal_range with small noise.
+      - "gradual_fault": ramps linearly from normal toward critical.
+      - "noise_spike": normal baseline with a few isolated single-sample
+        spikes above warning (these must NOT trigger sustained reflex
+        rules -- this is what test_reflex.py checks).
+      - "critical_fault": jumps to and holds at/above critical_threshold.
+    """
+
+    def __init__(self, channel: SensorChannel, scenario: str, seed: int = 0):
+        self.channel = channel
+        self.scenario = scenario
+        self.rng = random.Random(seed)
+        self._i = 0
+
+    def _baseline(self) -> float:
+        lo, hi = self.channel.normal_range
+        mid = (lo + hi) / 2.0
+        span = max(hi - lo, 1e-6)
+        noise = self.rng.uniform(-0.05, 0.05) * span
+        return mid + noise
+
+    def next_value(self, step: int, total_steps: int) -> float:
+        lo, hi = self.channel.normal_range
+        crit = self.channel.critical_threshold
+        warn = self.channel.warning_threshold
+        progress = step / max(total_steps - 1, 1)
+
+        if self.scenario == "normal":
+            value = self._baseline()
+        elif self.scenario == "gradual_fault":
+            # ramps from baseline to just past critical over the run
+            start = self._baseline()
+            value = start + progress * (crit - start) * 1.15
+        elif self.scenario == "noise_spike":
+            value = self._baseline()
+            # isolated single-sample spikes at fixed, deterministic offsets
+            if total_steps > 20 and step in {total_steps // 4, (total_steps * 3) // 4}:
+                value = warn + abs(warn - self._baseline()) + 0.5
+        elif self.scenario == "critical_fault":
+            # first third normal, then jump straight to/above critical and hold
+            if progress < 0.3:
+                value = self._baseline()
+            else:
+                value = crit + 0.1 * abs(crit - warn if crit != warn else 1.0)
+        else:
+            value = self._baseline()
+
+        self._i += 1
+        return round(value, 4)

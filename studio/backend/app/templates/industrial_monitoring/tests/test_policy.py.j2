@@ -1,0 +1,47 @@
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from black_dragon_app.actuation import ActuatorState, InvalidActionError  # noqa: E402
+from black_dragon_app.policy import decide  # noqa: E402
+from black_dragon_app.prediction import RiskEstimate  # noqa: E402
+from black_dragon_app.reflex import ReflexRule  # noqa: E402
+
+
+def test_reflex_decision_overrides_policy():
+    rule = ReflexRule(
+        id="r1", sensor_id="s1", comparator=">=", threshold=10.0,
+        consecutive_samples=1, action="shutdown", severity="critical",
+        ignore_isolated_spikes=False,
+    )
+    decision = decide(rule, [], ["do_nothing", "shutdown"], "normal")
+    assert decision.action == "shutdown"
+    assert decision.source == "reflex"
+
+
+def test_policy_defaults_to_do_nothing_when_calm():
+    decision = decide(None, [], ["do_nothing", "shutdown"], "normal")
+    assert decision.action == "do_nothing"
+    assert decision.source == "policy"
+
+
+def test_invalid_action_is_rejected():
+    actuator = ActuatorState(id="a1", allowed_actions=["do_nothing", "shutdown"])
+    rule = ReflexRule(
+        id="r1", sensor_id="s1", comparator=">=", threshold=10.0,
+        consecutive_samples=1, action="isolate_zone", severity="critical",
+        ignore_isolated_spikes=False,
+    )
+    decision = decide(rule, [], ["do_nothing", "shutdown"], "normal")
+    try:
+        actuator.apply(decision)
+        assert False, "expected InvalidActionError"
+    except InvalidActionError:
+        pass
+
+
+def test_high_risk_prediction_escalates_in_safety_first_mode():
+    risk = RiskEstimate(sensor_id="s1", current_value=8.0, projected_value=9.5, risk_0_to_1=0.9)
+    decision = decide(None, [risk], ["do_nothing", "reduce_speed"], "safety_first")
+    assert decision.action == "reduce_speed"

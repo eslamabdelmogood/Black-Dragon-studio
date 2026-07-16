@@ -1,0 +1,9 @@
+[project]
+name = "nomad-sentinel"
+version = "0.1.0"
+description = "Edge-sensing structural nervous system with adaptive local/cloud cognitive orchestration (Black Dragon Runtime x Nomad Runtime, Qwen Cloud EdgeAgent track)"
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.24"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

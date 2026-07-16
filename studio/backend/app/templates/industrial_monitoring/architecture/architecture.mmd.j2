@@ -1,0 +1,12 @@
+flowchart TD
+    S[Sensors / Simulated Inputs] --> N[Signal Normalization]
+    N --> R["Reflex Layer\n(deterministic rules)"]
+    R --> P["Prediction Layer\n(moving trend)"]
+    P --> Q["Reasoning / Policy Layer"]
+    Q --> A["Adaptation Layer\n(operating mode)"]
+    A --> ACT["Actuation\n({{ spec.actuators[0].id }})"]
+    ACT --> D[Dashboard + Logs]
+
+{% for s in spec.sensors %}
+    S -.-> {{ s.id }}["{{ s.id }} ({{ s.type }})"]
+{% endfor %}

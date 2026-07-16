@@ -1,0 +1,55 @@
+# Serverless Devs config for Alibaba Cloud Function Compute.
+# Deploy with: s deploy   (run from this deploy/fc/ directory)
+#
+# Function Compute's free tier (as of writing: ~1M requests/month and
+# ~400,000 GB-seconds/month, resets monthly) comfortably covers a
+# hackathon demo -- a 400-step simulation run plus a handful of
+# dashboard/API requests won't come close to that ceiling.
+#
+# Field names/schema occasionally shift between Serverless Devs / FC
+# component versions -- if `s deploy` errors on a field here, check
+# https://docs.serverless-devs.com and https://help.aliyun.com/product/50980.html
+# for the current schema before assuming the deployment itself is broken.
+
+edition: 3.0.0
+name: nomad-sentinel-fc
+access: default   # configured via `s config add` using your AccessKey ID/Secret
+
+vars:
+  region: ap-southeast-1   # match your Qwen Cloud workspace region
+
+resources:
+  nomad-sentinel-api:
+    component: fc3
+    props:
+      region: ${vars.region}
+      functionName: nomad-sentinel-api
+      description: Nomad Sentinel API + dashboard (Custom Runtime, deps pinned for FC's Python 3.7 base image)
+      runtime: custom
+      cpu: 0.5
+      memorySize: 512
+      diskSize: 512
+      timeout: 120
+      instanceConcurrency: 5
+      handler: not-used-for-custom-runtime
+      code: ../../                       # ships the whole repo; bootstrap only touches src/
+      customRuntimeConfig:
+        command:
+          - ./deploy/fc/bootstrap
+        port: 8765
+      environmentVariables:
+        QWEN_API_KEY: ${env(QWEN_API_KEY)}
+        QWEN_MODEL: ${env(QWEN_MODEL)}
+        QWEN_BASE_URL: ${env(QWEN_BASE_URL)}
+        ALIBABA_OSS_ACCESS_KEY_ID: ${env(ALIBABA_OSS_ACCESS_KEY_ID)}
+        ALIBABA_OSS_ACCESS_KEY_SECRET: ${env(ALIBABA_OSS_ACCESS_KEY_SECRET)}
+        ALIBABA_OSS_ENDPOINT: ${env(ALIBABA_OSS_ENDPOINT)}
+        ALIBABA_OSS_BUCKET: ${env(ALIBABA_OSS_BUCKET)}
+      triggers:
+        - triggerName: httpTrigger
+          triggerType: http
+          triggerConfig:
+            authType: anonymous
+            methods:
+              - GET
+              - POST

@@ -1,0 +1,57 @@
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from black_dragon_app.reflex import ReflexEngine, ReflexRule  # noqa: E402
+
+
+def make_rule(**overrides):
+    base = dict(
+        id="r1",
+        sensor_id="s1",
+        comparator=">=",
+        threshold=10.0,
+        consecutive_samples=5,
+        action="shutdown",
+        severity="critical",
+        ignore_isolated_spikes=True,
+    )
+    base.update(overrides)
+    return ReflexRule(**base)
+
+
+def test_reflex_fires_on_sustained_danger():
+    engine = ReflexEngine([make_rule()])
+    fired = None
+    for _ in range(5):
+        fired = engine.evaluate({"s1": 12.0})
+    assert fired is not None
+    assert fired.id == "r1"
+
+
+def test_reflex_ignores_single_noise_spike():
+    engine = ReflexEngine([make_rule()])
+    fired = engine.evaluate({"s1": 3.0})
+    assert fired is None
+    fired = engine.evaluate({"s1": 15.0})  # single spike
+    assert fired is None
+    fired = engine.evaluate({"s1": 3.0})  # back to normal
+    assert fired is None
+
+
+def test_critical_threshold_triggers_critical_action():
+    engine = ReflexEngine([make_rule(consecutive_samples=1, severity="critical", action="shutdown")])
+    fired = engine.evaluate({"s1": 999.0})
+    assert fired is not None
+    assert fired.severity == "critical"
+    assert fired.action == "shutdown"
+
+
+def test_warning_and_critical_priority():
+    warning = make_rule(id="w", threshold=5.0, consecutive_samples=1, severity="warning", action="reduce_speed")
+    critical = make_rule(id="c", threshold=10.0, consecutive_samples=1, severity="critical", action="shutdown")
+    engine = ReflexEngine([warning, critical])
+    fired = engine.evaluate({"s1": 12.0})
+    assert fired.id == "c"
+    assert fired.severity == "critical"

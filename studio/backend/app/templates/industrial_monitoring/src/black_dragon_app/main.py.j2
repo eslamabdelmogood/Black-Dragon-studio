@@ -1,0 +1,130 @@
+"""Wires Sensing -> Reflex -> Prediction -> Policy -> Adaptation -> Actuation
+-> Logging into one runnable pipeline, and drives it with either a
+simulated scenario or (in future work) a live sensor source.
+
+Usage:
+    python -m black_dragon_app.main --scenario critical_fault --steps 200
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from typing import Dict, List
+
+from .actuation import ActuatorState, InvalidActionError
+from .adaptation import AdaptationManager
+from .config import load_all
+from .logging import EventLog
+from .policy import decide
+from .prediction import TrendPredictor
+from .reflex import ReflexEngine, load_reflex_rules
+from .sensing import SimulatedSensor, load_sensors
+
+_OUTPUT_ROOT = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "outputs"
+)
+
+
+def run_scenario(scenario: str, steps: int = 200, seed: int = 0) -> Dict:
+    cfg = load_all()
+    sensors = load_sensors(cfg)
+    rules = load_reflex_rules(cfg)
+    actuator_cfgs = cfg.get("actuators", [])
+    if not actuator_cfgs:
+        raise RuntimeError("no actuators configured")
+    actuator = ActuatorState(id=actuator_cfgs[0]["id"], allowed_actions=actuator_cfgs[0]["allowed_actions"])
+
+    reflex_engine = ReflexEngine(rules)
+    adaptation = AdaptationManager(cfg.get("operating_modes", ["normal"]))
+    prediction_cfg = cfg.get("prediction", {"enabled": True, "horizon_seconds": 30})
+    sample_interval = 1.0 / max(sensors[0].sample_rate_hz, 1e-6) if sensors else 1.0
+    predictor = TrendPredictor(prediction_cfg.get("horizon_seconds", 30), sample_interval)
+
+    sim_sensors = {s.id: SimulatedSensor(s, scenario, seed=seed + hash(s.id) % 1000) for s in sensors}
+    channel_by_id = {s.id: s for s in sensors}
+
+    log = EventLog()
+    timeline: List[Dict] = []
+    reflex_fire_count = 0
+    critical_fire_count = 0
+    first_critical_step = None
+
+    for step in range(steps):
+        readings = {sid: sensor.next_value(step, steps) for sid, sensor in sim_sensors.items()}
+
+        fired_rule = reflex_engine.evaluate(readings)
+        if fired_rule is not None:
+            reflex_fire_count += 1
+            if fired_rule.severity == "critical" and first_critical_step is None:
+                first_critical_step = step
+                critical_fire_count += 1
+
+        risk_estimates = [
+            predictor.update_and_estimate(
+                sid, val, channel_by_id[sid].critical_threshold, channel_by_id[sid].warning_threshold
+            )
+            for sid, val in readings.items()
+        ]
+
+        mode = adaptation.update(fired_rule.severity if fired_rule else None)
+        decision = decide(fired_rule, risk_estimates, actuator.allowed_actions, mode)
+
+        try:
+            applied = actuator.apply(decision)
+        except InvalidActionError as exc:
+            log.record(step=step, event="error", message=str(exc))
+            raise
+
+        event = {
+            "step": step,
+            "readings": readings,
+            "fired_rule": fired_rule.id if fired_rule else None,
+            "severity": fired_rule.severity if fired_rule else "info",
+            "mode": mode,
+            "action": applied,
+            "reason": decision.reason,
+            "max_risk": max((r.risk_0_to_1 for r in risk_estimates), default=0.0),
+        }
+        log.record(**event)
+        timeline.append(event)
+
+    result = {
+        "scenario": scenario,
+        "steps": steps,
+        "reflex_fire_count": reflex_fire_count,
+        "critical_fire_count": critical_fire_count,
+        "first_critical_step": first_critical_step,
+        "final_action": actuator.current_action,
+        "final_mode": adaptation.state.mode,
+        "timeline": timeline,
+    }
+    return result
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description="Run the generated Physical AI monitoring pipeline.")
+    parser.add_argument("--scenario", default="normal")
+    parser.add_argument("--steps", type=int, default=200)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--out", default=os.path.join(_OUTPUT_ROOT, "simulation_log.json"))
+    args = parser.parse_args(argv)
+
+    result = run_scenario(args.scenario, steps=args.steps, seed=args.seed)
+
+    import json
+
+    os.makedirs(os.path.dirname(args.out), exist_ok=True)
+    with open(args.out, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2)
+
+    print(
+        f"[{{ spec.project.name }}] scenario={args.scenario} steps={args.steps} "
+        f"reflex_fires={result['reflex_fire_count']} final_action={result['final_action']} "
+        f"final_mode={result['final_mode']}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

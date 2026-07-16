@@ -1,0 +1,8 @@
+actuators:
+{% for a in spec.actuators %}
+  - id: {{ a.id }}
+    allowed_actions:
+{% for act in a.allowed_actions %}
+      - {{ act }}
+{% endfor %}
+{% endfor %}

@@ -1,0 +1,119 @@
+{
+  "internet_lost/CLOUD_ONLY": {
+    "verdict": "FAIL",
+    "detail": "400/400 steps produced no actuator command",
+    "raw": {
+      "stalled": 400,
+      "cloud_sourced": 0,
+      "local_sourced": 0,
+      "final_damage": 0.5266893533455207,
+      "isolated_at": null,
+      "max_latency_ms": 50,
+      "explainable_fraction": 0.0
+    }
+  },
+  "internet_lost/EDGE_ONLY": {
+    "verdict": "PASS",
+    "detail": "0/400 stalled, max decision latency 0ms",
+    "raw": {
+      "stalled": 0,
+      "cloud_sourced": 0,
+      "local_sourced": 400,
+      "final_damage": 0.18529409616132475,
+      "isolated_at": null,
+      "max_latency_ms": 0.0,
+      "explainable_fraction": 0.0
+    }
+  },
+  "internet_lost/NOMAD_SENTINEL": {
+    "verdict": "PASS",
+    "detail": "0/400 stalled, max decision latency 0ms",
+    "raw": {
+      "stalled": 0,
+      "cloud_sourced": 0,
+      "local_sourced": 400,
+      "final_damage": 0.18529409616132475,
+      "isolated_at": null,
+      "max_latency_ms": 0.0,
+      "explainable_fraction": 0.0
+    }
+  },
+  "high_latency/CLOUD_ONLY": {
+    "verdict": "FAIL",
+    "detail": "400/400 steps produced no actuator command",
+    "raw": {
+      "stalled": 400,
+      "cloud_sourced": 0,
+      "local_sourced": 0,
+      "final_damage": 0.5266893533455207,
+      "isolated_at": null,
+      "max_latency_ms": 2500,
+      "explainable_fraction": 0.0
+    }
+  },
+  "high_latency/EDGE_ONLY": {
+    "verdict": "PASS",
+    "detail": "0/400 stalled, max decision latency 0ms",
+    "raw": {
+      "stalled": 0,
+      "cloud_sourced": 0,
+      "local_sourced": 400,
+      "final_damage": 0.18529409616132475,
+      "isolated_at": null,
+      "max_latency_ms": 0.0,
+      "explainable_fraction": 0.0
+    }
+  },
+  "high_latency/NOMAD_SENTINEL": {
+    "verdict": "PASS",
+    "detail": "0/400 stalled, max decision latency 0ms",
+    "raw": {
+      "stalled": 0,
+      "cloud_sourced": 0,
+      "local_sourced": 400,
+      "final_damage": 0.18529409616132475,
+      "isolated_at": null,
+      "max_latency_ms": 0.0,
+      "explainable_fraction": 0.0
+    }
+  },
+  "compound_fault/CLOUD_ONLY": {
+    "verdict": "PASS",
+    "detail": "isolated at step 1 (<= 100), 100% of decisions carried a human-readable justification",
+    "raw": {
+      "stalled": 0,
+      "cloud_sourced": 400,
+      "local_sourced": 0,
+      "final_damage": 0.0501908603936624,
+      "isolated_at": 1,
+      "max_latency_ms": 60,
+      "explainable_fraction": 1.0
+    }
+  },
+  "compound_fault/EDGE_ONLY": {
+    "verdict": "FAIL",
+    "detail": "never isolated within 400 steps -- hotspot went undetected the entire run",
+    "raw": {
+      "stalled": 0,
+      "cloud_sourced": 0,
+      "local_sourced": 400,
+      "final_damage": 0.088592343959551,
+      "isolated_at": null,
+      "max_latency_ms": 0.0,
+      "explainable_fraction": 0.0
+    }
+  },
+  "compound_fault/NOMAD_SENTINEL": {
+    "verdict": "PASS",
+    "detail": "isolated at step 6 (<= 100), 100% of decisions carried a human-readable justification",
+    "raw": {
+      "stalled": 0,
+      "cloud_sourced": 394,
+      "local_sourced": 6,
+      "final_damage": 0.050707068444855105,
+      "isolated_at": 6,
+      "max_latency_ms": 60,
+      "explainable_fraction": 1.0
+    }
+  }
+}

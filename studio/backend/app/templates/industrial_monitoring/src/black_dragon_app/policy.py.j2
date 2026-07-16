@@ -1,0 +1,49 @@
+"""Layer D -- Reasoning / Policy.
+
+Selects an action from the actuator's allowed action set. The deterministic
+reflex layer always has final say for safety-critical actions (constitution
+6.3 / 6.9.12: "The LLM may explain or propose actions but may not bypass
+the safety policy") -- this module never overrides a fired reflex rule, it
+only decides what to do when no reflex rule has fired, using the predicted
+risk from Layer C.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import List, Optional
+
+from .prediction import RiskEstimate
+from .reflex import ReflexRule
+
+
+@dataclass
+class Decision:
+    action: str
+    reason: str
+    source: str  # "reflex" or "policy"
+    severity: str = "info"
+
+
+def decide(
+    fired_rule: Optional[ReflexRule],
+    risk_estimates: List[RiskEstimate],
+    allowed_actions: List[str],
+    mode: str,
+) -> Decision:
+    if fired_rule is not None:
+        return Decision(
+            action=fired_rule.action,
+            reason=f"reflex rule '{fired_rule.id}' fired ({fired_rule.severity})",
+            source="reflex",
+            severity=fired_rule.severity,
+        )
+
+    max_risk = max((r.risk_0_to_1 for r in risk_estimates), default=0.0)
+
+    if mode == "safety_first" and max_risk >= 0.5 and "reduce_speed" in allowed_actions:
+        return Decision("reduce_speed", f"predicted risk {max_risk:.2f} in safety_first mode", "policy", "warning")
+
+    if max_risk >= 0.7 and "alert_operator" in allowed_actions:
+        return Decision("alert_operator", f"predicted risk {max_risk:.2f} trending toward critical", "policy", "warning")
+
+    return Decision("do_nothing", "no reflex fired and predicted risk is within tolerance", "policy", "info")

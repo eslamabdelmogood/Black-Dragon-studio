@@ -1,0 +1,23 @@
+# Pinned specifically for Alibaba Cloud Function Compute's bare "custom"
+# runtime, which ships Python 3.7.4 + pip 19.2.2 (confirmed via a live
+# deploy crash log -- not a guess). requirements.txt (the main one) stays
+# on modern, unpinned versions for local dev; this file exists only
+# because the FC base image can't be changed without a Custom Container
+# + ACR setup, which is a bigger lift than pinning compatible versions.
+#
+# click is pinned explicitly below 8.0 because click 8.x uses
+# positional-only parameter syntax (PEP 570), which is a SyntaxError
+# under Python <3.8 -- that was the very first crash we saw.
+# numpy is pinned to the last release that supported Python 3.7
+# (confirmed against FC's own pip error output, which listed 1.21.6 as
+# the newest available version in this exact environment).
+flask==2.0.3
+click==7.1.2
+werkzeug==2.0.3
+itsdangerous==2.0.1
+jinja2==3.0.3
+markupsafe==2.0.1
+numpy==1.21.6
+psutil>=5.9,<6
+flask-cors==3.0.10
+oss2>=2.18

@@ -1,0 +1,34 @@
+"""Layer F -- Actuation.
+
+Applies a Decision to the (simulated) actuator, rejecting anything not in
+its allowed_actions list. On real hardware this module is the one place
+that would be replaced with an actual driver call; everything upstream is
+hardware-agnostic.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import List
+
+from .policy import Decision
+
+
+class InvalidActionError(ValueError):
+    pass
+
+
+@dataclass
+class ActuatorState:
+    id: str
+    allowed_actions: List[str]
+    current_action: str = "do_nothing"
+    history: List[str] = field(default_factory=list)
+
+    def apply(self, decision: Decision) -> str:
+        if decision.action not in self.allowed_actions:
+            raise InvalidActionError(
+                f"action '{decision.action}' is not in allowed_actions for actuator '{self.id}'"
+            )
+        self.current_action = decision.action
+        self.history.append(decision.action)
+        return self.current_action

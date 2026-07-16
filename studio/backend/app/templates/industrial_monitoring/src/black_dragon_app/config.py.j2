@@ -1,0 +1,32 @@
+"""Loads the project's YAML configuration files into plain dicts.
+
+Kept intentionally dependency-light (PyYAML only) so the generated project
+has a minimal footprint on constrained edge devices.
+"""
+from __future__ import annotations
+
+import os
+from typing import Any, Dict
+
+import yaml
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_CONFIG_DIR = os.path.join(_ROOT, "config")
+
+
+def _load(name: str) -> Dict[str, Any]:
+    path = os.path.join(_CONFIG_DIR, name)
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def load_all() -> Dict[str, Any]:
+    """Returns a merged dict with keys: sensors, actuators, reflex_rules,
+    plus everything in runtime.yaml (project, prediction, operating_modes,
+    simulation, metrics)."""
+    cfg: Dict[str, Any] = {}
+    cfg.update(_load("sensors.yaml"))
+    cfg.update(_load("actuators.yaml"))
+    cfg.update(_load("reflex_rules.yaml"))
+    cfg.update(_load("runtime.yaml"))
+    return cfg

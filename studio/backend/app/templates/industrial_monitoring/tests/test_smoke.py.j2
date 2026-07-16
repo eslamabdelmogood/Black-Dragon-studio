@@ -1,0 +1,31 @@
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "simulation"))
+
+from black_dragon_app.main import run_scenario  # noqa: E402
+
+
+def test_simulation_completes_and_produces_metrics():
+    result = run_scenario("critical_fault", steps=40, seed=1)
+    assert result["steps"] == 40
+    assert len(result["timeline"]) == 40
+
+
+def test_critical_scenario_triggers_a_response():
+    result = run_scenario("critical_fault", steps=40, seed=1)
+    assert result["critical_fire_count"] >= 1
+    assert result["final_action"] != "do_nothing"
+
+
+def test_full_simulator_writes_outputs(tmp_path, monkeypatch):
+    import simulator  # the generated project's simulation/simulator.py
+
+    out = simulator.run_all(seed=2)
+    assert "metrics" in out
+    assert len(out["metrics"]) >= 1
+    for name, m in out["metrics"].items():
+        assert "final_action" in m
+        assert "correct_action_rate" in m

@@ -1,0 +1,76 @@
+"""Layer B -- Reflex.
+
+Deterministic, low-latency safety rules. This module intentionally contains
+NO machine learning and NO LLM calls: every safety action here is a direct
+comparison against a configured threshold (constitution 6.3). Isolated
+single-sample noise spikes are ignored by requiring `consecutive_samples`
+in a row before a rule fires, when `ignore_isolated_spikes` is set.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+
+
+@dataclass
+class ReflexRule:
+    id: str
+    sensor_id: str
+    comparator: str
+    threshold: float
+    consecutive_samples: int
+    action: str
+    severity: str
+    ignore_isolated_spikes: bool
+
+
+def load_reflex_rules(cfg: Dict) -> List[ReflexRule]:
+    return [ReflexRule(**r) for r in cfg.get("reflex_rules", [])]
+
+
+_COMPARATORS = {
+    ">=": lambda v, t: v >= t,
+    "<=": lambda v, t: v <= t,
+    ">": lambda v, t: v > t,
+    "<": lambda v, t: v < t,
+    "==": lambda v, t: v == t,
+}
+
+
+@dataclass
+class RuleState:
+    streak: int = 0
+
+
+class ReflexEngine:
+    """Evaluates all rules against the latest sensor readings and returns
+    the highest-severity rule that fired this step (or None)."""
+
+    def __init__(self, rules: List[ReflexRule]):
+        self.rules = rules
+        self._state: Dict[str, RuleState] = {r.id: RuleState() for r in rules}
+
+    def evaluate(self, readings: Dict[str, float]) -> Optional[ReflexRule]:
+        triggered: List[ReflexRule] = []
+        for rule in self.rules:
+            value = readings.get(rule.sensor_id)
+            if value is None:
+                continue
+            cmp_fn = _COMPARATORS[rule.comparator]
+            condition_met = cmp_fn(value, rule.threshold)
+            state = self._state[rule.id]
+
+            if condition_met:
+                state.streak += 1
+            else:
+                state.streak = 0
+
+            required = rule.consecutive_samples if rule.ignore_isolated_spikes else 1
+            if state.streak >= required:
+                triggered.append(rule)
+
+        if not triggered:
+            return None
+        # critical always wins over warning; among equal severity, first wins
+        triggered.sort(key=lambda r: 0 if r.severity == "critical" else 1)
+        return triggered[0]

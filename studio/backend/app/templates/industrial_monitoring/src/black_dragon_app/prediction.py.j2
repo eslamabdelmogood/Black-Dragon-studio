@@ -1,0 +1,52 @@
+"""Layer C -- Prediction.
+
+Estimates short-horizon risk with a simple deterministic moving-trend
+extrapolation (constitution 3.2 / section 7 Layer C: "simple deterministic
+or lightweight statistical model in v1"). No black-box model, no external
+calls -- this stays auditable and reproducible.
+"""
+from __future__ import annotations
+
+from collections import deque
+from dataclasses import dataclass
+from typing import Deque, Dict, Optional
+
+
+@dataclass
+class RiskEstimate:
+    sensor_id: str
+    current_value: float
+    projected_value: float
+    risk_0_to_1: float
+
+
+class TrendPredictor:
+    def __init__(self, horizon_seconds: float, sample_interval_s: float, history_len: int = 20):
+        self.horizon_steps = max(1, int(horizon_seconds / max(sample_interval_s, 1e-6)))
+        self.history: Dict[str, Deque[float]] = {}
+        self.history_len = history_len
+
+    def update_and_estimate(
+        self, sensor_id: str, value: float, critical_threshold: float, warning_threshold: float
+    ) -> RiskEstimate:
+        hist = self.history.setdefault(sensor_id, deque(maxlen=self.history_len))
+        hist.append(value)
+
+        if len(hist) < 2:
+            slope = 0.0
+        else:
+            slope = (hist[-1] - hist[0]) / max(len(hist) - 1, 1)
+
+        projected = value + slope * self.horizon_steps
+        span = max(abs(critical_threshold - warning_threshold), 1e-6)
+        # 0 at warning threshold or below, 1 at/above critical threshold
+        raw = (projected - warning_threshold) / span if critical_threshold >= warning_threshold else (
+            (warning_threshold - projected) / span
+        )
+        risk = min(max(raw, 0.0), 1.0)
+        return RiskEstimate(
+            sensor_id=sensor_id,
+            current_value=value,
+            projected_value=round(projected, 4),
+            risk_0_to_1=round(risk, 4),
+        )

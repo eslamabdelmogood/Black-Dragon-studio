@@ -1,0 +1,44 @@
+"""Layer E -- Adaptation.
+
+Tracks the current operating mode and switches it based on recent reflex
+severity. Kept as a small, explicit state machine -- see constitution
+section 7, Layer E.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import List, Optional
+
+
+@dataclass
+class ModeState:
+    mode: str = "normal"
+    consecutive_critical: int = 0
+    consecutive_calm: int = 0
+
+
+class AdaptationManager:
+    def __init__(self, operating_modes: List[str]):
+        self.available_modes = operating_modes
+        self.state = ModeState(mode="normal" if "normal" in operating_modes else operating_modes[0])
+
+    def update(self, fired_severity: Optional[str]) -> str:
+        s = self.state
+        if fired_severity == "critical":
+            s.consecutive_critical += 1
+            s.consecutive_calm = 0
+        elif fired_severity == "warning":
+            s.consecutive_critical = 0
+            s.consecutive_calm = 0
+        else:
+            s.consecutive_calm += 1
+            s.consecutive_critical = 0
+
+        if "safety_first" in self.available_modes and s.consecutive_critical >= 1:
+            s.mode = "safety_first"
+        elif "degraded" not in self.available_modes and "normal" in self.available_modes and s.consecutive_calm >= 10:
+            s.mode = "normal"
+        elif s.consecutive_calm >= 10 and "normal" in self.available_modes:
+            s.mode = "normal"
+
+        return s.mode

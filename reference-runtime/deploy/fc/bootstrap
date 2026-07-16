@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Function Compute Custom Runtime entrypoint. FC starts this script and
+# expects the process to listen on 0.0.0.0:$PORT (configured in s.yaml
+# below to match server.py's NOMAD_PORT default, 8765).
+#
+# IMPORTANT: the code archive `s deploy` ships is source only -- nothing
+# in the FC base image has flask/numpy/etc pre-installed. This script
+# installs dependencies into a writable directory on every cold start
+# (FC containers are freshly provisioned per cold start, and /tmp is
+# writable even though /code is read-only), then puts that directory
+# FIRST on PYTHONPATH so nothing stray on the base image's own Python
+# path can shadow it.
+#
+# This intentionally runs the exact same server.py used for the ECS
+# path -- Function Compute vs ECS is a hosting decision, not a code fork.
+set -e
+
+echo "[bootstrap] python3: $(command -v python3), version: $(python3 --version 2>&1)"
+
+DEPS_DIR="/tmp/deps"
+if [ ! -f "${DEPS_DIR}/.installed" ]; then
+  echo "[bootstrap] installing dependencies into ${DEPS_DIR} (cold start)"
+  mkdir -p "${DEPS_DIR}"
+  python3 -m pip install --quiet --no-cache-dir --target "${DEPS_DIR}" \
+    -r /code/deploy/fc/requirements-fc.txt
+  touch "${DEPS_DIR}/.installed"
+else
+  echo "[bootstrap] dependencies already present in ${DEPS_DIR} (warm start)"
+fi
+
+export NOMAD_PORT="${PORT:-8765}"
+export PYTHONPATH="${DEPS_DIR}:/code/src:${PYTHONPATH:-}"
+echo "[bootstrap] PYTHONPATH=${PYTHONPATH}"
+echo "[bootstrap] starting server.py on port ${NOMAD_PORT}"
+exec python3 /code/src/nomad_sentinel/runtime/api/server.py

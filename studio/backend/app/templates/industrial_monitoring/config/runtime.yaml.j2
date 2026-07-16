@@ -1,0 +1,27 @@
+project:
+  name: {{ spec.project.name }}
+  domain: {{ spec.project.domain }}
+  target_platform: {{ spec.project.target_platform }}
+  offline_required: {{ spec.project.offline_required | lower }}
+
+prediction:
+  enabled: {{ spec.prediction.enabled | lower }}
+  method: {{ spec.prediction.method }}
+  horizon_seconds: {{ spec.prediction.horizon_seconds }}
+
+operating_modes:
+{% for m in spec.operating_modes %}
+  - {{ m }}
+{% endfor %}
+
+simulation:
+  duration_seconds: {{ spec.simulation.duration_seconds }}
+  scenarios:
+{% for sc in spec.simulation.scenarios %}
+    - {{ sc }}
+{% endfor %}
+
+metrics:
+{% for m in spec.metrics %}
+  - {{ m }}
+{% endfor %}

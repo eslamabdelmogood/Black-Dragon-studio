@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Optical Skin vs. Point Sensors -- Interactive Demo</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background:#0b0f14; color:#e6edf3; font-family: -apple-system, Segoe UI, sans-serif; margin:0; padding:24px; }
+  h1 { font-size: 20px; margin-bottom:4px; }
+  .sub { color:#8899a6; margin-bottom:20px; font-size:13px; }
+  .row { display:flex; gap:24px; flex-wrap:wrap; }
+  .panel { flex:1; min-width:300px; }
+  .panel h2 { font-size:14px; color:#9fb3c8; margin:0 0 8px; }
+  canvas { width:100%; background:#111a22; border-radius:8px; border:1px solid #22303c; cursor:crosshair; }
+  .controls { display:flex; gap:12px; align-items:center; margin:16px 0; flex-wrap:wrap; }
+  button { background:#16202a; color:#e6edf3; border:1px solid #2a3a48; border-radius:6px; padding:8px 14px; cursor:pointer; font-size:13px; }
+  button:hover { background:#1c2b38; }
+  .stats { display:flex; gap:24px; margin-top:16px; flex-wrap:wrap; }
+  .stat { background:#111a22; border-radius:8px; padding:10px 16px; border:1px solid #22303c; min-width:160px; }
+  .stat .label { font-size:11px; color:#8899a6; }
+  .stat .value { font-size:20px; font-weight:600; margin-top:2px; }
+  .good { color:#5ee3a0; }
+  .bad { color:#f26a6a; }
+  .hint { font-size:12px; color:#8899a6; margin-top:8px; }
+</style>
+</head>
+<body>
+<h1>Optical Skin vs. traditional point sensors</h1>
+<div class="sub">Click anywhere on either panel to place a fault. Same underlying panel, two sensing architectures.</div>
+
+<div class="controls">
+  <button onclick="randomFault()">Inject random fault</button>
+  <span class="hint">or click on either grid below</span>
+</div>
+
+<div class="row">
+  <div class="panel">
+    <h2>Traditional point sensors (15 fixed sensors)</h2>
+    <canvas id="pointCanvas" width="300" height="200"></canvas>
+  </div>
+  <div class="panel">
+    <h2>Optical skin (600-grating mesh, IDW reconstruction)</h2>
+    <canvas id="skinCanvas" width="300" height="200"></canvas>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">Point-sensor localization error</div>
+    <div class="value bad" id="pointErr">-- cells</div>
+  </div>
+  <div class="stat">
+    <div class="label">Optical skin localization error</div>
+    <div class="value good" id="skinErr">-- cells</div>
+  </div>
+  <div class="stat">
+    <div class="label">Point sensor coverage</div>
+    <div class="value" id="pointCov">--%</div>
+  </div>
+  <div class="stat">
+    <div class="label">Optical skin coverage</div>
+    <div class="value" id="skinCov">100%</div>
+  </div>
+</div>
+
+<script>
+const H = 40, W = 60;
+let fault = { y: 20, x: 30 };
+
+function fieldAt(y, x, fy, fx) {
+  const d2 = (y - fy) ** 2 + (x - fx) ** 2;
+  return 25 + 90 * Math.exp(-d2 / 40);
+}
+
+function evenlySpaced(n, h, w) {
+  const pts = [];
+  const cols = Math.ceil(Math.sqrt(n * w / h));
+  const rows = Math.ceil(n / cols);
+  for (let ri = 0; ri < rows; ri++) {
+    const y = Math.round(ri * (h - 1) / Math.max(rows - 1, 1));
+    for (let ci = 0; ci < cols; ci++) {
+      const x = Math.round(ci * (w - 1) / Math.max(cols - 1, 1));
+      pts.push([y, x]);
+      if (pts.length === n) return pts;
+    }
+  }
+  return pts;
+}
+
+const pointSensors = evenlySpaced(15, H, W);
+const gratings = [];
+for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) gratings.push([y, x]);
+
+function noise(std) { return (Math.random() - 0.5) * 2 * std; }
+
+function drawPointSensors(ctx) {
+  const cw = ctx.canvas.width / W, ch = ctx.canvas.height / H;
+  ctx.fillStyle = "#111a22";
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  let peakVal = -Infinity, peakLoc = null;
+  for (const [y, x] of pointSensors) {
+    const val = fieldAt(y, x, fault.y, fault.x) + noise(2);
+    if (val > peakVal) { peakVal = val; peakLoc = [y, x]; }
+    const t = Math.max(0, Math.min(1, (val - 25) / 90));
+    const r = Math.round(30 + t * 200), g = Math.round(80 + (1 - t) * 120), b = 90;
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.beginPath();
+    ctx.arc((x + 0.5) * cw, (y + 0.5) * ch, 7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return peakLoc;
+}
+
+function drawOpticalSkin(ctx) {
+  const readings = gratings.map(([y, x]) => fieldAt(y, x, fault.y, fault.x) + noise(0.3));
+
+  // Reconstruct at native grid resolution (40x60 = 2,400 cells), not full
+  // canvas pixel resolution (300x200 = 60,000 pixels). That's ~8x fewer
+  // weighted-sum evaluations per click, with no visible quality loss since
+  // the canvas upscales the low-res buffer smoothly.
+  let peakVal = -Infinity, peakLoc = null;
+  const small = document.createElement("canvas");
+  small.width = W;
+  small.height = H;
+  const sctx = small.getContext("2d");
+  const img = sctx.createImageData(W, H);
+
+  for (let gy = 0; gy < H; gy++) {
+    for (let gx = 0; gx < W; gx++) {
+      let wsum = 0, vsum = 0;
+      for (let i = 0; i < gratings.length; i++) {
+        const [sy, sx] = gratings[i];
+        const d2 = (gy - sy) ** 2 + (gx - sx) ** 2 + 1e-3;
+        const w = 1 / d2;
+        wsum += w;
+        vsum += w * readings[i];
+      }
+      const val = vsum / wsum;
+      if (val > peakVal) { peakVal = val; peakLoc = [gy, gx]; }
+      const t = Math.max(0, Math.min(1, (val - 25) / 90));
+      const r = Math.round(30 + t * 200), g = Math.round(80 + (1 - t) * 120), b = 90;
+      const idx = (gy * W + gx) * 4;
+      img.data[idx] = r; img.data[idx + 1] = g; img.data[idx + 2] = b; img.data[idx + 3] = 255;
+    }
+  }
+  sctx.putImageData(img, 0, 0);
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(small, 0, 0, ctx.canvas.width, ctx.canvas.height);
+  return peakLoc;
+}
+
+function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+
+function render() {
+  const pointCtx = document.getElementById("pointCanvas").getContext("2d");
+  const skinCtx = document.getElementById("skinCanvas").getContext("2d");
+  const pointPeak = drawPointSensors(pointCtx);
+  const skinPeak = drawOpticalSkin(skinCtx);
+
+  document.getElementById("pointErr").textContent = dist(pointPeak, [fault.y, fault.x]).toFixed(1) + " cells";
+  document.getElementById("skinErr").textContent = dist(skinPeak, [fault.y, fault.x]).toFixed(1) + " cells";
+  document.getElementById("pointCov").textContent = (100 * pointSensors.length / (H * W)).toFixed(1) + "%";
+}
+
+function randomFault() {
+  fault = { y: 4 + Math.floor(Math.random() * (H - 8)), x: 4 + Math.floor(Math.random() * (W - 8)) };
+  render();
+}
+
+function attachClick(id) {
+  const canvas = document.getElementById(id);
+  canvas.addEventListener("click", (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width * canvas.width;
+    const py = (e.clientY - rect.top) / rect.height * canvas.height;
+    fault = { y: Math.round(py / (canvas.height / H)), x: Math.round(px / (canvas.width / W)) };
+    render();
+  });
+}
+
+attachClick("pointCanvas");
+attachClick("skinCanvas");
+render();
+</script>
+</body>
+</html>

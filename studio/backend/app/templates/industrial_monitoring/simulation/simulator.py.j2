@@ -1,0 +1,89 @@
+"""Runs every configured scenario end to end and writes a combined results
+file plus per-scenario metrics. This is what Black Dragon Studio invokes for
+the "Run simulation" step, and what `outputs/metrics.json` is built from.
+
+LABEL: everything produced here is SIMULATED using synthetic sensor data
+(see src/black_dragon_app/sensing.py `SimulatedSensor`), not measured on
+physical hardware.
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from black_dragon_app.config import load_all  # noqa: E402
+from black_dragon_app.main import run_scenario  # noqa: E402
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_OUTPUTS = os.path.join(_ROOT, "outputs")
+_SCENARIOS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scenarios.json")
+
+
+def steps_for_duration(cfg) -> int:
+    duration = cfg.get("simulation", {}).get("duration_seconds", 60)
+    sensors = cfg.get("sensors", [])
+    rate = sensors[0]["sample_rate_hz"] if sensors else 1
+    steps = int(duration * min(rate, 20))  # cap steps for a fast, deterministic smoke test
+    return max(steps, 20)
+
+
+def run_all(seed: int = 0) -> dict:
+    cfg = load_all()
+    with open(_SCENARIOS_FILE, "r", encoding="utf-8") as f:
+        scenario_defs = json.load(f)["scenarios"]
+
+    steps = steps_for_duration(cfg)
+    results = {}
+    for scenario in scenario_defs:
+        name = scenario["name"]
+        results[name] = run_scenario(name, steps=steps, seed=seed)
+
+    metrics = summarize(results)
+
+    os.makedirs(_OUTPUTS, exist_ok=True)
+    with open(os.path.join(_OUTPUTS, "simulation_results.json"), "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2)
+    with open(os.path.join(_OUTPUTS, "metrics.json"), "w", encoding="utf-8") as f:
+        json.dump(metrics, f, indent=2)
+
+    return {"results": results, "metrics": metrics}
+
+
+def summarize(results: dict) -> dict:
+    metrics = {}
+    for name, r in results.items():
+        detection_latency_ms = None
+        if r["first_critical_step"] is not None:
+            detection_latency_ms = r["first_critical_step"] * 1000.0 / max(len(r["timeline"]), 1) * (
+                r["steps"] / max(r["steps"], 1)
+            )
+        false_alarms = 0
+        if name == "noise_spike":
+            false_alarms = r["critical_fire_count"]
+
+        correct_action = True
+        if name == "critical_fault" and r["final_action"] not in {"shutdown", "reduce_speed", "isolate_zone"}:
+            correct_action = False
+        if name == "noise_spike" and r["critical_fire_count"] > 0:
+            correct_action = False
+
+        metrics[name] = {
+            "reflex_fire_count": r["reflex_fire_count"],
+            "critical_fire_count": r["critical_fire_count"],
+            "first_critical_step": r["first_critical_step"],
+            "detection_latency_ms_proxy": detection_latency_ms,
+            "false_alarms": false_alarms,
+            "final_action": r["final_action"],
+            "final_mode": r["final_mode"],
+            "correct_action_rate": 1.0 if correct_action else 0.0,
+            "final_damage_proxy": r["critical_fire_count"] / max(r["steps"], 1),
+        }
+    return metrics
+
+
+if __name__ == "__main__":
+    out = run_all()
+    print(json.dumps(out["metrics"], indent=2))

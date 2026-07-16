@@ -1,0 +1,15 @@
+[Unit]
+Description=Nomad Sentinel API + Dashboard
+After=network.target
+
+[Service]
+WorkingDirectory=/root/nomad-sentinel
+EnvironmentFile=/root/nomad-sentinel/deploy/env.production
+ExecStart=/root/nomad-sentinel/.venv/bin/python3 src/nomad_sentinel/runtime/api/server.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

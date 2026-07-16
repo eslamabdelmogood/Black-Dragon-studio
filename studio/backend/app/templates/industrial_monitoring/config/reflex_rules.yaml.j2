@@ -1,0 +1,13 @@
+# Deterministic safety rules (constitution 6.3). These are evaluated in
+# reflex.py by direct comparison -- never by an LLM.
+reflex_rules:
+{% for r in spec.reflex_rules %}
+  - id: {{ r.id }}
+    sensor_id: {{ r.sensor_id }}
+    comparator: "{{ r.comparator }}"
+    threshold: {{ r.threshold }}
+    consecutive_samples: {{ r.consecutive_samples }}
+    action: {{ r.action }}
+    severity: {{ r.severity }}
+    ignore_isolated_spikes: {{ r.ignore_isolated_spikes | lower }}
+{% endfor %}

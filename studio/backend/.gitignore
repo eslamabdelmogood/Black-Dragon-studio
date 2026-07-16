@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+workspace/projects/*/
+!workspace/projects/.gitkeep
+.pytest_cache/

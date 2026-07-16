@@ -1,0 +1,10 @@
+{
+  "scenarios": [
+{% for sc in spec.simulation.scenarios %}
+    {
+      "name": "{{ sc }}",
+      "description": "{% if sc == 'normal' %}All sensors stay within their normal operating range.{% elif sc == 'gradual_fault' %}One or more sensors drift steadily from normal toward the critical threshold.{% elif sc == 'noise_spike' %}Baseline-normal signal with isolated single-sample spikes that must NOT trigger a sustained reflex.{% elif sc == 'critical_fault' %}Sensor jumps to and holds at or above the critical threshold, must trigger the critical reflex rule.{% else %}Custom scenario.{% endif %}"
+    }{% if not loop.last %},{% endif %}
+{% endfor %}
+  ]
+}
