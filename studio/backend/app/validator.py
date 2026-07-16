@@ -219,7 +219,7 @@ def stage5_package_validation(output_dir: str, zip_path: str, manifest_files: Li
         passed = False
         details.append("missing README.md")
 
-    for required_file in ("engineering_review.json", "docs/engineering_plan.md", "deploy/README.md"):
+    for required_file in ("engineering_review.json", "knowledge_context.json", "docs/engineering_plan.md", "docs/knowledge_graph.md", "deploy/README.md"):
         if not os.path.exists(os.path.join(output_dir, required_file)):
             passed = False
             details.append(f"missing required generated artifact: {required_file}")

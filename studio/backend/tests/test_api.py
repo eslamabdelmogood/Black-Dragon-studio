@@ -75,7 +75,9 @@ def test_full_lifecycle_reaches_validated_and_downloadable():
     files = r.json()["files"]
     assert "README.md" in files
     assert "engineering_review.json" in files
+    assert "knowledge_context.json" in files
     assert "docs/engineering_plan.md" in files
+    assert "docs/knowledge_graph.md" in files
     assert "deploy/README.md" in files
 
 
@@ -92,3 +94,30 @@ def test_path_traversal_is_rejected():
 def test_unknown_project_returns_404():
     r = client.get("/api/projects/deadbeef0000/status")
     assert r.status_code == 404
+
+
+def test_knowledge_graph_learns_and_reuses_components():
+    first = client.post("/api/specify", json={"prompt": DEMO_PROMPT})
+    first_pid = first.json()["project_id"]
+    client.post(f"/api/projects/{first_pid}/approve")
+    generated = client.post(f"/api/projects/{first_pid}/generate")
+    assert generated.status_code == 200
+    assert generated.json()["status"] == "validated"
+
+    stats = client.get("/api/knowledge-graph/stats")
+    assert stats.status_code == 200
+    assert stats.json()["component_count"] >= 5
+
+    second = client.post("/api/specify", json={"prompt": DEMO_PROMPT})
+    second_pid = second.json()["project_id"]
+    status = client.get(f"/api/projects/{second_pid}/status").json()
+    knowledge_entries = [e for e in status["stage_log"] if e["stage"] == "knowledge_graph_search"]
+    assert knowledge_entries
+    assert "0 reusable" not in knowledge_entries[-1]["detail"]
+
+    client.post(f"/api/projects/{second_pid}/approve")
+    second_generated = client.post(f"/api/projects/{second_pid}/generate")
+    assert second_generated.status_code == 200
+    context = second_generated.json()["manifest"]["knowledge_context"]
+    assert context
+    assert {item["component_type"] for item in context}

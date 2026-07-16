@@ -292,6 +292,7 @@ class GenerationManifest(BaseModel):
     validation: List[ValidationStageResult] = Field(default_factory=list)
     spec_source: str = "heuristic"  # "heuristic" or "llm"
     engineering_agents: List[EngineeringAgentResult] = Field(default_factory=list)
+    knowledge_context: List[dict] = Field(default_factory=list)
 
 
 def new_project_id() -> str:

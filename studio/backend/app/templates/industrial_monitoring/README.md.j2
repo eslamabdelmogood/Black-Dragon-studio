@@ -26,6 +26,11 @@ engineering roles before export:
 See `docs/engineering_plan.md` and `engineering_review.json` for the full
 role-by-role outputs.
 
+## Engineering Knowledge Graph
+
+Black Dragon Studio searched its accumulated engineering memory before export.
+{% if knowledge_context %}It found {{ knowledge_context | length }} reusable validated component(s) from prior projects and recorded them in `knowledge_context.json` plus `docs/knowledge_graph.md`.{% else %}No prior reusable components matched yet; this validated project will teach the graph for future generations.{% endif %}
+
 ## What this is
 
 A {{ spec.project.domain }} monitoring pipeline for target platform
@@ -75,6 +80,7 @@ python -m http.server 8080         # then open dashboard/index.html
 ├── engineering_review.json    # engineering-team role handoffs
 ├── architecture/architecture.mmd
 ├── docs/engineering_plan.md
+├── docs/knowledge_graph.md
 ├── deploy/README.md
 ├── config/                   # sensors.yaml, actuators.yaml, reflex_rules.yaml, runtime.yaml
 ├── src/black_dragon_app/     # sensing, reflex, prediction, policy, adaptation, actuation, logging

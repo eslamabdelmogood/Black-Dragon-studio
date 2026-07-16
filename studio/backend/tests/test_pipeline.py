@@ -32,7 +32,7 @@ def test_generate_project_produces_expected_structure():
 
     for expected_dir in ["config", "src/black_dragon_app", "simulation", "dashboard", "tests", "outputs", "docs", "deploy"]:
         assert os.path.isdir(os.path.join(out_dir, expected_dir)), expected_dir
-    for expected_file in ["README.md", "system_spec.json", "generation_manifest.json", "engineering_review.json", "docs/engineering_plan.md", "deploy/README.md", "pyproject.toml"]:
+    for expected_file in ["README.md", "system_spec.json", "generation_manifest.json", "engineering_review.json", "knowledge_context.json", "docs/engineering_plan.md", "docs/knowledge_graph.md", "deploy/README.md", "pyproject.toml"]:
         assert os.path.isfile(os.path.join(out_dir, expected_file)), expected_file
     assert manifest.template == "industrial_monitoring"
     assert [a.role for a in manifest.engineering_agents] == [

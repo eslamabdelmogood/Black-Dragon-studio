@@ -215,6 +215,7 @@ async function loadWorkspace() {
     <div class="kv"><div class="k">Files generated</div><div>${state.manifest.files.length}</div></div>
     <div class="kv"><div class="k">Spec source</div><div>${state.manifest.spec_source}</div></div>
     <div class="kv"><div class="k">Engineering agents</div><div>${(state.manifest.engineering_agents || []).map(a => a.role).join(" → ")}</div></div>
+    <div class="kv"><div class="k">Knowledge reuse</div><div>${(state.manifest.knowledge_context || []).length} reusable component(s)</div></div>
     <p class="muted" style="margin-top:16px;">All simulation results are SIMULATED, not measured on real hardware. This project is not safety-certified.</p>
   `;
 
@@ -224,6 +225,17 @@ async function loadWorkspace() {
     const d = await r.json();
     $("#architectureView").textContent = d.content;
   } catch (e) { $("#architectureView").textContent = "unavailable: " + e.message; }
+
+  // Knowledge graph
+  const knowledge = state.manifest.knowledge_context || [];
+  if (knowledge.length) {
+    const knowledgeHtml = knowledge.map(k =>
+      `<div class="spec-block"><h3>${escapeHtml(k.component_type)} — ${escapeHtml(k.name)}</h3><p class="muted">From ${escapeHtml(k.source_project_name)}; score ${k.score}; ${escapeHtml((k.reasons || []).join(", "))}</p><p>${escapeHtml(k.summary || "")}</p></div>`
+    ).join("");
+    const graphBlock = document.createElement("div");
+    graphBlock.innerHTML = `<h3>Engineering Knowledge Graph reuse</h3>${knowledgeHtml}`;
+    $("#tab-overview").appendChild(graphBlock);
+  }
 
   // Engineering team
   const agents = state.manifest.engineering_agents || [];
