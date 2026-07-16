@@ -51,6 +51,15 @@ def test_full_lifecycle_reaches_validated_and_downloadable():
     assert r.status_code == 200
     data = r.json()
     assert data["status"] == "validated", data
+    assert [a["role"] for a in data["manifest"]["engineering_agents"]] == [
+        "Chief Architect",
+        "Safety Engineer",
+        "Embedded Engineer",
+        "Simulation Engineer",
+        "QA Engineer",
+        "Documentation Engineer",
+        "Deployment Engineer",
+    ]
 
     r = client.get(f"/api/projects/{pid}/results")
     assert r.status_code == 200
@@ -63,7 +72,11 @@ def test_full_lifecycle_reaches_validated_and_downloadable():
 
     r = client.get(f"/api/projects/{pid}/files")
     assert r.status_code == 200
-    assert "README.md" in r.json()["files"]
+    files = r.json()["files"]
+    assert "README.md" in files
+    assert "engineering_review.json" in files
+    assert "docs/engineering_plan.md" in files
+    assert "deploy/README.md" in files
 
 
 def test_path_traversal_is_rejected():

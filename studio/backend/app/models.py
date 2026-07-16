@@ -273,6 +273,13 @@ class ValidationStageResult(BaseModel):
     details: List[str] = Field(default_factory=list)
 
 
+class EngineeringAgentResult(BaseModel):
+    role: str
+    responsibility: str
+    outputs: List[str] = Field(default_factory=list)
+    handoff_to: Optional[str] = None
+
+
 class GenerationManifest(BaseModel):
     project_id: str
     project_name: str
@@ -284,6 +291,7 @@ class GenerationManifest(BaseModel):
     files: List[str] = Field(default_factory=list)
     validation: List[ValidationStageResult] = Field(default_factory=list)
     spec_source: str = "heuristic"  # "heuristic" or "llm"
+    engineering_agents: List[EngineeringAgentResult] = Field(default_factory=list)
 
 
 def new_project_id() -> str:

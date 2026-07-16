@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import generator, packager, storage, validator
+from .engineering_team import run_engineering_team, summarize_agent_results
 from .models import (
     GenerationManifest,
     ProjectStatus,
@@ -175,6 +176,14 @@ def generate(project_id: str) -> Dict[str, Any]:
         )
 
     spec = SystemSpec.model_validate(state["spec"])
+    engineering_agents = run_engineering_team(spec)
+    state["engineering_agents"] = summarize_agent_results(engineering_agents)
+    _append_stage_log(
+        state,
+        "engineering_team_review",
+        "completed",
+        " -> ".join(agent.role for agent in engineering_agents),
+    )
     state["status"] = ProjectStatus.GENERATING.value
     _save_state(project_id, state)
 
@@ -182,7 +191,7 @@ def generate(project_id: str) -> Dict[str, Any]:
 
     # Stage: generating_project
     try:
-        manifest = generator.generate_project(spec, project_id, output_dir)
+        manifest = generator.generate_project(spec, project_id, output_dir, engineering_agents)
         _append_stage_log(state, "generating_project", "completed", f"{len(manifest.files)} files written")
     except Exception as exc:  # noqa: BLE001
         state["status"] = ProjectStatus.FAILED.value

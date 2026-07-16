@@ -209,7 +209,7 @@ def stage5_package_validation(output_dir: str, zip_path: str, manifest_files: Li
     details: List[str] = []
     passed = True
 
-    required_dirs = ["config", "src", "simulation", "dashboard", "tests", "outputs", "architecture"]
+    required_dirs = ["config", "src", "simulation", "dashboard", "tests", "outputs", "architecture", "docs", "deploy"]
     for d in required_dirs:
         if not os.path.isdir(os.path.join(output_dir, d)):
             passed = False
@@ -218,6 +218,11 @@ def stage5_package_validation(output_dir: str, zip_path: str, manifest_files: Li
     if not os.path.exists(os.path.join(output_dir, "README.md")):
         passed = False
         details.append("missing README.md")
+
+    for required_file in ("engineering_review.json", "docs/engineering_plan.md", "deploy/README.md"):
+        if not os.path.exists(os.path.join(output_dir, required_file)):
+            passed = False
+            details.append(f"missing required generated artifact: {required_file}")
 
     if not (os.path.exists(os.path.join(output_dir, "requirements.txt")) or os.path.exists(os.path.join(output_dir, "pyproject.toml"))):
         passed = False

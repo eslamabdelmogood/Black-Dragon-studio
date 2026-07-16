@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pytest -q
+python simulation/simulator.py
+python -m http.server 8080

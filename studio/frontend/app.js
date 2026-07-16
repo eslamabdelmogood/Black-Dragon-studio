@@ -214,6 +214,7 @@ async function loadWorkspace() {
     <div class="kv"><div class="k">Generated at</div><div>${state.manifest.generated_at}</div></div>
     <div class="kv"><div class="k">Files generated</div><div>${state.manifest.files.length}</div></div>
     <div class="kv"><div class="k">Spec source</div><div>${state.manifest.spec_source}</div></div>
+    <div class="kv"><div class="k">Engineering agents</div><div>${(state.manifest.engineering_agents || []).map(a => a.role).join(" → ")}</div></div>
     <p class="muted" style="margin-top:16px;">All simulation results are SIMULATED, not measured on real hardware. This project is not safety-certified.</p>
   `;
 
@@ -223,6 +224,17 @@ async function loadWorkspace() {
     const d = await r.json();
     $("#architectureView").textContent = d.content;
   } catch (e) { $("#architectureView").textContent = "unavailable: " + e.message; }
+
+  // Engineering team
+  const agents = state.manifest.engineering_agents || [];
+  if (agents.length) {
+    const agentHtml = agents.map(a =>
+      `<div class="spec-block"><h3>${a.role} → ${a.handoff_to || "final export"}</h3><p class="muted">${a.responsibility}</p><ul class="plain">${a.outputs.map(o => `<li>${escapeHtml(o)}</li>`).join("")}</ul></div>`
+    ).join("");
+    const overview = document.createElement("div");
+    overview.innerHTML = `<h3>Autonomous engineering team</h3>${agentHtml}`;
+    $("#tab-overview").appendChild(overview);
+  }
 
   // Configuration
   const configFiles = ["config/sensors.yaml", "config/actuators.yaml", "config/reflex_rules.yaml", "config/runtime.yaml"];
