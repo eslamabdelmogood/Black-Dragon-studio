@@ -10,7 +10,7 @@ This script intentionally exercises the project like a skeptical hackathon judge
 from __future__ import annotations
 
 import io
-import importlib.util
+main
 import os
 import shutil
 import subprocess
@@ -38,30 +38,7 @@ os.environ["BDS_WORKSPACE_ROOT"] = str(WORKSPACE)
 shutil.rmtree(WORKSPACE, ignore_errors=True)
 sys.path.insert(0, str(BACKEND))
 
-
-def ensure_backend_dependencies() -> None:
-    """Install backend dependencies when the script is run from a fresh Codespace.
-
-    Judges often run `python scripts/judge_smoke.py` before creating a virtual
-    environment. Auto-installing the backend requirements makes the judge scripts
-    self-contained while still using the repository's pinned requirements file.
-    """
-    if importlib.util.find_spec("fastapi") is not None:
-        return
-    requirements = BACKEND / "requirements.txt"
-    print(f"fastapi is not installed; installing backend dependencies from {requirements}...")
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", str(requirements)])
-    except subprocess.CalledProcessError as exc:
-        raise SystemExit(
-            "Could not auto-install backend dependencies. Run:\n"
-            f"  {sys.executable} -m pip install -r {requirements}\n"
-            "Then re-run this script."
-        ) from exc
-
-
-ensure_backend_dependencies()
-
+ main
 from fastapi.testclient import TestClient  # noqa: E402
 from app.main import app  # noqa: E402
 
