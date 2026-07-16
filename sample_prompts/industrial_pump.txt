@@ -1,0 +1,1 @@
+Build an industrial pump monitoring system using vibration and temperature sensors. Ignore isolated noise spikes. Reduce speed when vibration stays above 7 mm/s for five samples. Shut down when vibration reaches 10 mm/s or temperature exceeds 105 C. It must continue operating without cloud access.

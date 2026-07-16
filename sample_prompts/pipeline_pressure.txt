@@ -1,0 +1,1 @@
+Build a pipeline pressure monitoring system. Watch pressure and flow rate. If pressure exceeds 12 bar shut down the pump feeding the line. If flow rate drops below 5 l/min for five samples, alert the operator. Run offline on an edge gateway.
