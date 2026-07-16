@@ -1,0 +1,8 @@
+.git
+.pytest_cache
+**/__pycache__
+**/*.pyc
+studio/backend/workspace/projects/*
+studio/backend/workspace/engineering_knowledge_graph.json
+reference-runtime/outputs/*
+reference-runtime/docs/npu_artifacts/*

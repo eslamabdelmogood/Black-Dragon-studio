@@ -139,6 +139,12 @@ def _detect_sensors(prompt: str) -> Tuple[List[SensorSpec], List[str]]:
                 used_default = False
             elif len(nearby_numbers_sorted) == 1:
                 critical = nearby_numbers_sorted[0]
+                if canonical in {"flow"}:
+                    # Lower-is-worse sensors need warning >= critical. If the
+                    # only nearby number is borrowed from surrounding prose,
+                    # keep the default warning as a conservative upper warning
+                    # boundary rather than producing an invalid spec.
+                    warning = max(warning, critical)
                 used_default = False
 
         if used_default:

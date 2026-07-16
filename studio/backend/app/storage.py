@@ -44,6 +44,10 @@ def generated_dir(project_id: str) -> str:
     return os.path.join(project_dir(project_id), "generated")
 
 
+def knowledge_graph_path() -> str:
+    return os.path.join(_WORKSPACE_ROOT, "engineering_knowledge_graph.json")
+
+
 def ensure_project(project_id: str) -> str:
     d = project_dir(project_id)
     os.makedirs(d, exist_ok=True)
