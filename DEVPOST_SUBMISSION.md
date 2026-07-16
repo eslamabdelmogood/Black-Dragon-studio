@@ -66,6 +66,9 @@ python scripts/judge_smoke.py
 
 The smoke test runs specify → approve → generate → validate → results → download,
 then creates a second similar project to prove Engineering Knowledge Graph reuse.
+The judge scripts auto-install backend requirements if `fastapi` is missing;
+if network access is blocked, run `pip install -r studio/backend/requirements.txt`
+first.
 
 ### Option D — hard-mode competition simulation
 

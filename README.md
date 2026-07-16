@@ -81,7 +81,9 @@ docker compose up --build
 See [`DEVPOST_SUBMISSION.md`](DEVPOST_SUBMISSION.md) for the project pitch,
 track rationale, GPT-5.6/Codex usage notes, supported platforms, demo video
 script, judge test plan, and submission checklist. Use `scripts/hard_mode_test.py`
-for a competition-style stress run before final submission.
+for a competition-style stress run before final submission. The judge scripts
+will auto-install backend requirements if `fastapi` is missing; if network
+access is blocked, run `pip install -r studio/backend/requirements.txt` first.
 
 ## How GPT-5.6 and Codex are used
 
