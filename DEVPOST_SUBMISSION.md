@@ -47,7 +47,7 @@ cd studio/backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 pytest -q
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
 # open http://localhost:8000
 ```
 
@@ -66,9 +66,7 @@ python scripts/judge_smoke.py
 
 The smoke test runs specify → approve → generate → validate → results → download,
 then creates a second similar project to prove Engineering Knowledge Graph reuse.
-The judge scripts auto-install backend requirements if `fastapi` is missing;
-if network access is blocked, run `pip install -r studio/backend/requirements.txt`
-first.
+
 
 ### Option D — hard-mode competition simulation
 

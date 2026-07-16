@@ -1,0 +1,320 @@
+{
+  "components": [
+    {
+      "domain": "industrial_monitoring",
+      "id": "b03a36e3c018:architecture:pump-monitor",
+      "name": "industrial_monitoring:temperature-vibration",
+      "project_id": "b03a36e3c018",
+      "project_name": "pump-monitor",
+      "reusable_fields": {
+        "actions": [
+          "do_nothing",
+          "isolate_zone",
+          "reduce_speed",
+          "shutdown"
+        ],
+        "runtime_layers": [
+          "sensing",
+          "normalization",
+          "reflex",
+          "prediction",
+          "policy",
+          "adaptation",
+          "actuation",
+          "dashboard",
+          "logs"
+        ],
+        "sensor_types": [
+          "temperature",
+          "vibration"
+        ]
+      },
+      "summary": "Layered Physical AI runtime with sensing, normalization, reflex, prediction, policy, adaptation, actuation, dashboard, and logs.",
+      "tags": [
+        "industrial_monitoring",
+        "temperature",
+        "vibration",
+        "generic_arm_edge"
+      ],
+      "target_platform": "generic_arm_edge",
+      "type": "architecture",
+      "validated_at": "2026-07-16T18:35:12.206154+00:00"
+    },
+    {
+      "domain": "industrial_monitoring",
+      "id": "b03a36e3c018:safety_policy:pump-monitor",
+      "name": "pump-monitor reflex policy",
+      "project_id": "b03a36e3c018",
+      "project_name": "pump-monitor",
+      "reusable_fields": {
+        "actions": [
+          "do_nothing",
+          "isolate_zone",
+          "reduce_speed",
+          "shutdown"
+        ],
+        "critical_rule_count": 2,
+        "ignore_isolated_spikes": true,
+        "rule_count": 4
+      },
+      "summary": "Deterministic warning and critical reflex rules derived from approved thresholds.",
+      "tags": [
+        "safety",
+        "reflex",
+        "temperature",
+        "vibration",
+        "do_nothing",
+        "isolate_zone",
+        "reduce_speed",
+        "shutdown"
+      ],
+      "target_platform": "generic_arm_edge",
+      "type": "safety_policy",
+      "validated_at": "2026-07-16T18:35:12.206154+00:00"
+    },
+    {
+      "domain": "industrial_monitoring",
+      "id": "b03a36e3c018:simulation_model:pump-monitor",
+      "name": "pump-monitor simulation suite",
+      "project_id": "b03a36e3c018",
+      "project_name": "pump-monitor",
+      "reusable_fields": {
+        "duration_seconds": 60.0,
+        "metrics": [
+          "detection_latency_ms",
+          "false_alarms",
+          "correct_action_rate",
+          "final_damage_proxy"
+        ],
+        "performance_metrics": {
+          "critical_fault": {
+            "correct_action_rate": 1.0,
+            "critical_fire_count": 1,
+            "false_alarms": 0,
+            "final_action": "shutdown",
+            "final_damage_proxy": 0.0008333333333333334,
+            "final_mode": "safety_first",
+            "reflex_fire_count": 840
+          },
+          "gradual_fault": {
+            "correct_action_rate": 1.0,
+            "critical_fire_count": 1,
+            "false_alarms": 0,
+            "final_action": "shutdown",
+            "final_damage_proxy": 0.0008333333333333334,
+            "final_mode": "safety_first",
+            "reflex_fire_count": 542
+          },
+          "noise_spike": {
+            "correct_action_rate": 0.0,
+            "critical_fire_count": 1,
+            "false_alarms": 1,
+            "final_action": "do_nothing",
+            "final_damage_proxy": 0.0008333333333333334,
+            "final_mode": "normal",
+            "reflex_fire_count": 2
+          },
+          "normal": {
+            "correct_action_rate": 1.0,
+            "critical_fire_count": 0,
+            "false_alarms": 0,
+            "final_action": "do_nothing",
+            "final_damage_proxy": 0.0,
+            "final_mode": "normal",
+            "reflex_fire_count": 0
+          }
+        },
+        "scenarios": [
+          "normal",
+          "gradual_fault",
+          "noise_spike",
+          "critical_fault"
+        ]
+      },
+      "summary": "Synthetic scenario suite used to validate normal, gradual fault, noise spike, and critical fault behavior.",
+      "tags": [
+        "simulation",
+        "normal",
+        "gradual_fault",
+        "noise_spike",
+        "critical_fault",
+        "temperature",
+        "vibration"
+      ],
+      "target_platform": "generic_arm_edge",
+      "type": "simulation_model",
+      "validated_at": "2026-07-16T18:35:12.206154+00:00"
+    },
+    {
+      "domain": "industrial_monitoring",
+      "id": "b03a36e3c018:validation_strategy:pump-monitor",
+      "name": "pump-monitor validation gates",
+      "project_id": "b03a36e3c018",
+      "project_name": "pump-monitor",
+      "reusable_fields": {
+        "test_strategy": [
+          "schema_validation",
+          "static_validation",
+          "unit_tests",
+          "simulation_smoke_test",
+          "package_validation"
+        ],
+        "validation_stages": [
+          "schema_validation",
+          "static_validation",
+          "unit_tests",
+          "simulation_smoke_test",
+          "package_validation"
+        ]
+      },
+      "summary": "Schema, static, unit, simulation, and package checks required before export.",
+      "tags": [
+        "testing",
+        "validation",
+        "schema_validation",
+        "static_validation",
+        "unit_tests",
+        "simulation_smoke_test",
+        "package_validation"
+      ],
+      "target_platform": "generic_arm_edge",
+      "type": "validation_strategy",
+      "validated_at": "2026-07-16T18:35:12.206154+00:00"
+    },
+    {
+      "domain": "industrial_monitoring",
+      "id": "b03a36e3c018:dashboard_layout:pump-monitor",
+      "name": "pump-monitor operational dashboard",
+      "project_id": "b03a36e3c018",
+      "project_name": "pump-monitor",
+      "reusable_fields": {
+        "metric_names": [
+          "detection_latency_ms",
+          "false_alarms",
+          "correct_action_rate",
+          "final_damage_proxy"
+        ],
+        "panels": [
+          "overview",
+          "configuration",
+          "simulation_metrics",
+          "timeline",
+          "tests",
+          "files",
+          "export"
+        ]
+      },
+      "summary": "Single-page dashboard pattern showing scenario metrics, reflex triggers, actions, modes, and a simulation timeline.",
+      "tags": [
+        "dashboard",
+        "timeline",
+        "metrics",
+        "temperature",
+        "vibration"
+      ],
+      "target_platform": "generic_arm_edge",
+      "type": "dashboard_layout",
+      "validated_at": "2026-07-16T18:35:12.206154+00:00"
+    },
+    {
+      "domain": "industrial_monitoring",
+      "id": "b03a36e3c018:deployment_workflow:pump-monitor",
+      "name": "pump-monitor local handoff",
+      "project_id": "b03a36e3c018",
+      "project_name": "pump-monitor",
+      "reusable_fields": {
+        "cloud_deploy_in_scope": false,
+        "hardware_flash_in_scope": false,
+        "workflow": [
+          "create_venv",
+          "install_requirements",
+          "run_tests",
+          "run_simulation",
+          "preview_dashboard"
+        ]
+      },
+      "summary": "Local-first deployment workflow with venv setup, dependency installation, tests, simulation, and dashboard preview.",
+      "tags": [
+        "deployment",
+        "local",
+        "generic_arm_edge"
+      ],
+      "target_platform": "generic_arm_edge",
+      "type": "deployment_workflow",
+      "validated_at": "2026-07-16T18:35:12.206154+00:00"
+    },
+    {
+      "domain": "industrial_monitoring",
+      "id": "b03a36e3c018:engineering_tradeoff:pump-monitor",
+      "name": "pump-monitor MVP safety tradeoffs",
+      "project_id": "b03a36e3c018",
+      "project_name": "pump-monitor",
+      "reusable_fields": {
+        "deferred": [
+          "hardware_flashing",
+          "cloud_deployment",
+          "safety_certification"
+        ],
+        "prioritized": [
+          "deterministic_reflex",
+          "offline_operation",
+          "simulation_before_deployment",
+          "human_review"
+        ],
+        "rationale": "MVP exports validated starter projects while requiring independent engineering review before machinery control."
+      },
+      "summary": "Reusable tradeoff record: deterministic safety and simulation-first export are prioritized over real hardware flashing or autonomous cloud deployment.",
+      "tags": [
+        "tradeoff",
+        "safety",
+        "simulation-first",
+        "generic_arm_edge"
+      ],
+      "target_platform": "generic_arm_edge",
+      "type": "engineering_tradeoff",
+      "validated_at": "2026-07-16T18:35:12.206154+00:00"
+    }
+  ],
+  "projects": [
+    {
+      "component_ids": [
+        "b03a36e3c018:architecture:pump-monitor",
+        "b03a36e3c018:safety_policy:pump-monitor",
+        "b03a36e3c018:simulation_model:pump-monitor",
+        "b03a36e3c018:validation_strategy:pump-monitor",
+        "b03a36e3c018:dashboard_layout:pump-monitor",
+        "b03a36e3c018:deployment_workflow:pump-monitor",
+        "b03a36e3c018:engineering_tradeoff:pump-monitor"
+      ],
+      "fingerprint": {
+        "actions": [
+          "do_nothing",
+          "isolate_zone",
+          "reduce_speed",
+          "shutdown"
+        ],
+        "domain": "industrial_monitoring",
+        "operating_modes": [
+          "normal",
+          "safety_first",
+          "degraded"
+        ],
+        "scenario_names": [
+          "normal",
+          "gradual_fault",
+          "noise_spike",
+          "critical_fault"
+        ],
+        "sensor_types": [
+          "temperature",
+          "vibration"
+        ],
+        "target_platform": "generic_arm_edge"
+      },
+      "learned_at": "2026-07-16T18:35:12.206221+00:00",
+      "project_id": "b03a36e3c018",
+      "project_name": "pump-monitor"
+    }
+  ],
+  "version": "1.0"
+}
