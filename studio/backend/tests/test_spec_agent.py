@@ -57,3 +57,16 @@ def test_vague_prompt_still_produces_a_valid_spec():
     assert isinstance(spec, SystemSpec)
     assert len(spec.sensors) >= 1
     assert len(spec.assumptions) >= 1
+
+
+def test_pipeline_prompt_with_flow_and_pressure_stays_valid():
+    prompt = (
+        "Build a pipeline pressure monitoring system. Watch pressure and flow rate. "
+        "If pressure exceeds 12 bar shut down the pump feeding the line. "
+        "If flow rate drops below 5 l/min for five samples, alert the operator. "
+        "Run offline on an edge gateway."
+    )
+    spec, _ = heuristic_extract(prompt)
+    flow = next(s for s in spec.sensors if s.type == "flow")
+    assert flow.warning_threshold >= flow.critical_threshold
+    assert isinstance(spec, SystemSpec)

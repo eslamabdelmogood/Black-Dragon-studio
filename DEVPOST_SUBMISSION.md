@@ -67,6 +67,17 @@ python scripts/judge_smoke.py
 The smoke test runs specify → approve → generate → validate → results → download,
 then creates a second similar project to prove Engineering Knowledge Graph reuse.
 
+### Option D — hard-mode competition simulation
+
+```bash
+python scripts/hard_mode_test.py
+```
+
+The hard-mode script starts from a clean workspace with no OpenAI API key,
+generates multiple industrial-monitoring projects from strong and vague prompts,
+verifies approval gates and path traversal protection, downloads and extracts
+every ZIP, then runs each generated project's own tests and simulator.
+
 ## Demo prompt
 
 ```text
@@ -104,6 +115,8 @@ five samples. Shut down when vibration reaches 10 mm/s or temperature exceeds
 - Engineering-team role handoffs.
 - Engineering Knowledge Graph learning from project 1 and reusing components in
   project 2.
+- Hard-mode validation via `python scripts/hard_mode_test.py` to demonstrate
+  generated ZIPs run independently after extraction.
 
 ## Repository and license
 

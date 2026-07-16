@@ -70,6 +70,9 @@ For judges and reviewers:
 # fastest full-lifecycle smoke test, including Knowledge Graph reuse
 python scripts/judge_smoke.py
 
+# hard-mode judge simulation: multiple prompts, ZIP extraction, generated tests/simulators
+python scripts/hard_mode_test.py
+
 # containerized demo
 docker compose up --build
 # open http://localhost:8000
@@ -77,7 +80,8 @@ docker compose up --build
 
 See [`DEVPOST_SUBMISSION.md`](DEVPOST_SUBMISSION.md) for the project pitch,
 track rationale, GPT-5.6/Codex usage notes, supported platforms, demo video
-script, judge test plan, and submission checklist.
+script, judge test plan, and submission checklist. Use `scripts/hard_mode_test.py`
+for a competition-style stress run before final submission.
 
 ## How GPT-5.6 and Codex are used
 
@@ -117,7 +121,7 @@ black-dragon-studio/
 │   │   │   ├── packager.py        # ZIP export
 │   │   │   ├── storage.py         # workspace/projects/<id>/ filesystem store
 │   │   │   └── templates/industrial_monitoring/   # the one template, v1.0.0
-│   │   └── tests/          # 22 tests covering spec agent, models, pipeline, API
+│   │   └── tests/          # 24 tests covering spec agent, models, pipeline, API
 │   └── frontend/           # vanilla HTML/CSS/JS single-page app (6 screens)
 └── reference-runtime/       # merged nomad-sentinel / Black-Dragon-Runtime project
 ```
