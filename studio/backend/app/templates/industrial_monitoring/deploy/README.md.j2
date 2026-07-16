@@ -1,0 +1,27 @@
+# Deployment Package
+
+This directory contains the MVP deployment handoff for `{{ spec.project.name }}`.
+It is intentionally local-first and does **not** flash real hardware or deploy to
+cloud infrastructure automatically.
+
+## Local validation before handoff
+
+```bash
+cd {{ spec.project.name }}
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pytest -q
+python simulation/simulator.py
+python -m http.server 8080
+```
+
+Open `dashboard/index.html` after the HTTP server starts.
+
+## Production-readiness checklist
+
+- Confirm every sensor mapping against physical hardware datasheets.
+- Review every reflex threshold with a qualified domain engineer.
+- Run the simulator with site-specific scenarios.
+- Keep API keys and secrets outside this repository and ZIP package.
+- Perform independent safety review before connecting actuators to real machinery.
