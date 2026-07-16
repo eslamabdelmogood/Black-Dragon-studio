@@ -20,7 +20,7 @@ os.environ["BDS_WORKSPACE_ROOT"] = str(WORKSPACE)
 shutil.rmtree(WORKSPACE, ignore_errors=True)
 sys.path.insert(0, str(BACKEND))
 
- main
+
 from fastapi.testclient import TestClient  # noqa: E402
 from app.main import app  # noqa: E402
 
