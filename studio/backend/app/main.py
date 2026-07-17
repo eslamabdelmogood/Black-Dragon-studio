@@ -167,7 +167,7 @@ def generate(project_id: str) -> Dict[str, Any]:
 
     # Stage: generating_project
     try:
-         manifest = generator.generate_project(spec, project_id, output_dir, engineering_agents, knowledge_context)
+        manifest = generator.generate_project(spec, project_id, output_dir, engineering_agents, knowledge_context)
         _append_stage_log(state, "generating_project", "completed", f"{len(manifest.files)} files written")
     except Exception as exc:  # noqa: BLE001
         state["status"] = ProjectStatus.FAILED.value
