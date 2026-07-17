@@ -273,6 +273,28 @@ class ValidationStageResult(BaseModel):
     details: List[str] = Field(default_factory=list)
 
 
+class EngineeringAgentResult(BaseModel):
+    role: str
+    responsibility: str
+    outputs: List[str] = Field(default_factory=list)
+    handoff_to: Optional[str] = None
+
+
+class FeedbackRequest(BaseModel):
+    usefulness_score: int = Field(..., ge=1, le=5)
+    accuracy_score: int = Field(..., ge=1, le=5)
+    safety_score: int = Field(..., ge=1, le=5)
+    would_reuse: bool = Field(default=True)
+    notes: str = Field(default="", max_length=2000)
+    improvement_suggestions: List[str] = Field(default_factory=list, max_length=10)
+
+
+class FeedbackRecord(FeedbackRequest):
+    project_id: str
+    project_name: str
+    submitted_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
 class GenerationManifest(BaseModel):
     project_id: str
     project_name: str
@@ -284,6 +306,8 @@ class GenerationManifest(BaseModel):
     files: List[str] = Field(default_factory=list)
     validation: List[ValidationStageResult] = Field(default_factory=list)
     spec_source: str = "heuristic"  # "heuristic" or "llm"
+    engineering_agents: List[EngineeringAgentResult] = Field(default_factory=list)
+    knowledge_context: List[dict] = Field(default_factory=list)
 
 
 def new_project_id() -> str:

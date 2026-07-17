@@ -1,0 +1,10 @@
+services:
+  black-dragon-studio:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      BDS_WORKSPACE_ROOT: /app/studio/backend/workspace
+      # Optional: set OPENAI_API_KEY and SPEC_AGENT_MODEL=gpt-5.6 to run the LLM-backed spec path.
+      # OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # SPEC_AGENT_MODEL: gpt-5.6
