@@ -1,0 +1,31 @@
+# Engineering Knowledge Graph Context
+
+Black Dragon Studio does not treat this project as an isolated code-generation
+task. Before export, it searched the local engineering knowledge graph for
+validated reusable components from prior generated projects.
+
+{% if knowledge_context %}
+## Reused engineering components
+
+{% for item in knowledge_context %}
+### {{ item.component_type }} — {{ item.name }}
+
+- **Source project:** {{ item.source_project_name }} (`{{ item.source_project_id }}`)
+- **Similarity score:** {{ item.score }}
+- **Why it matched:** {{ item.reasons | join(', ') }}
+- **Reusable summary:** {{ item.summary }}
+
+{% endfor %}
+{% else %}
+No prior validated project components matched this request yet. Once this
+project validates, its architecture, runtime pattern, safety policy,
+simulation strategy, testing strategy, dashboard/deployment workflow, and
+metrics will be added to the graph for future projects.
+{% endif %}
+
+## What is stored
+
+The graph stores structured engineering knowledge: component type, source
+project, target platform, sensor/action tags, validation stages, reusable
+fields, and performance summaries. It does **not** store raw generated source
+code as the reusable unit.

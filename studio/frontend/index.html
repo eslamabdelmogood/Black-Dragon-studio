@@ -65,6 +65,7 @@
         <button class="tab" data-tab="tests">Tests</button>
         <button class="tab" data-tab="files">Files</button>
         <button class="tab" data-tab="export">Export</button>
+        <button class="tab" data-tab="feedback">Feedback Loop</button>
       </div>
 
       <div id="tab-overview" class="tab-content active"></div>
@@ -99,6 +100,18 @@
         <pre class="code" id="manifestView"></pre>
         <h3>Warnings &amp; limitations</h3>
         <ul id="warningsList"></ul>
+      </div>
+      <div id="tab-feedback" class="tab-content">
+        <p class="muted">Close the loop: validated project → user feedback → Knowledge Graph update.</p>
+        <div class="spec-block">
+          <label>Usefulness (1-5)<input id="feedbackUsefulness" type="number" min="1" max="5" value="5" /></label>
+          <label>Accuracy (1-5)<input id="feedbackAccuracy" type="number" min="1" max="5" value="5" /></label>
+          <label>Safety confidence (1-5)<input id="feedbackSafety" type="number" min="1" max="5" value="5" /></label>
+          <label><input id="feedbackReuse" type="checkbox" checked /> I would reuse this generated pattern</label>
+          <textarea id="feedbackNotes" rows="5" placeholder="What worked, what should improve, and what should the Studio learn?"></textarea>
+          <button id="submitFeedbackBtn" class="primary">Submit feedback to Knowledge Graph</button>
+          <p id="feedbackStatus" class="muted"></p>
+        </div>
       </div>
     </div>
   </section>

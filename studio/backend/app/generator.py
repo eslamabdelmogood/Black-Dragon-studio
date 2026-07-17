@@ -14,11 +14,11 @@ import hashlib
 import json
 import os
 import shutil
-from typing import List
+from typing import Any, Dict, List, Optional
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from .models import GenerationManifest, SystemSpec
+from .models import EngineeringAgentResult, GenerationManifest, SystemSpec
 
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 _TEMPLATES_ROOT = os.path.join(_APP_DIR, "templates")
@@ -31,7 +31,13 @@ def _spec_hash(spec: SystemSpec) -> str:
     return hashlib.sha256(payload).hexdigest()[:16]
 
 
-def generate_project(spec: SystemSpec, project_id: str, output_dir: str) -> GenerationManifest:
+def generate_project(
+    spec: SystemSpec,
+    project_id: str,
+    output_dir: str,
+    engineering_agents: Optional[List[EngineeringAgentResult]] = None,
+    knowledge_context: Optional[List[Dict[str, Any]]] = None,
+) -> GenerationManifest:
     """Renders every file in the template directory (Jinja2 for .j2 files,
     verbatim copy for anything else) into `output_dir`. Returns a manifest
     describing exactly what was produced."""
@@ -50,6 +56,8 @@ def generate_project(spec: SystemSpec, project_id: str, output_dir: str) -> Gene
     )
     context = {
         "spec": spec,
+        "engineering_agents": engineering_agents or [],
+        "knowledge_context": knowledge_context or [],
         "generation_year": datetime.datetime.now(datetime.timezone.utc).year,
     }
 
@@ -82,6 +90,18 @@ def generate_project(spec: SystemSpec, project_id: str, output_dir: str) -> Gene
         f.write(spec.model_dump_json(indent=2))
     written.append("system_spec.json")
 
+    # write the engineering-team review into the generated project
+    review_path = os.path.join(output_dir, "engineering_review.json")
+    with open(review_path, "w", encoding="utf-8") as f:
+        json.dump([a.model_dump() for a in (engineering_agents or [])], f, indent=2)
+    written.append("engineering_review.json")
+
+    # write retrieved knowledge context into the generated project
+    knowledge_path = os.path.join(output_dir, "knowledge_context.json")
+    with open(knowledge_path, "w", encoding="utf-8") as f:
+        json.dump(knowledge_context or [], f, indent=2)
+    written.append("knowledge_context.json")
+
     # outputs/ directory must exist for the simulator to write into
     outputs_dir = os.path.join(output_dir, "outputs")
     os.makedirs(outputs_dir, exist_ok=True)
@@ -97,6 +117,8 @@ def generate_project(spec: SystemSpec, project_id: str, output_dir: str) -> Gene
         template_version=TEMPLATE_VERSION,
         spec_hash=_spec_hash(spec),
         files=sorted(set(written)),
+        engineering_agents=engineering_agents or [],
+        knowledge_context=knowledge_context or [],
     )
     manifest_path = os.path.join(output_dir, "generation_manifest.json")
     with open(manifest_path, "w", encoding="utf-8") as f:

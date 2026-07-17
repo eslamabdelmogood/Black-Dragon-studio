@@ -22,7 +22,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import generator, packager, storage, validator
+from .engineering_team import run_engineering_team, summarize_agent_results
+from .knowledge_graph import graph_stats, learn_from_project, record_feedback, search_similar
 from .models import (
+    FeedbackRecord,
+    FeedbackRequest,
     GenerationManifest,
     ProjectStatus,
     SpecifyRequest,
@@ -96,6 +100,8 @@ def specify(req: SpecifyRequest) -> SpecifyResponse:
     spec, questions, source = extract_spec(req.prompt)
     project_id = new_project_id()
 
+    knowledge_context = search_similar(spec)
+
     state = {
         "project_id": project_id,
         "status": ProjectStatus.NEEDS_APPROVAL.value,
@@ -104,10 +110,17 @@ def specify(req: SpecifyRequest) -> SpecifyResponse:
         "spec_source": source,
         "questions": [q.model_dump() for q in questions],
         "warnings": list(spec.warnings),
+        "knowledge_context": knowledge_context,
         "created_at": _now(),
         "stage_log": [],
     }
     _append_stage_log(state, "parsing_requirements", "completed", f"source={source}")
+    _append_stage_log(
+        state,
+        "knowledge_graph_search",
+        "completed",
+        f"{len(knowledge_context)} reusable component(s) found",
+    )
     _save_state(project_id, state)
 
     return SpecifyResponse(
@@ -175,14 +188,24 @@ def generate(project_id: str) -> Dict[str, Any]:
         )
 
     spec = SystemSpec.model_validate(state["spec"])
+    engineering_agents = run_engineering_team(spec)
+    state["engineering_agents"] = summarize_agent_results(engineering_agents)
+    _append_stage_log(
+        state,
+        "engineering_team_review",
+        "completed",
+        " -> ".join(agent.role for agent in engineering_agents),
+    )
     state["status"] = ProjectStatus.GENERATING.value
     _save_state(project_id, state)
+
+    knowledge_context = state.get("knowledge_context", [])
 
     output_dir = os.path.join(storage.generated_dir(project_id), spec.project.name)
 
     # Stage: generating_project
     try:
-        manifest = generator.generate_project(spec, project_id, output_dir)
+        manifest = generator.generate_project(spec, project_id, output_dir, engineering_agents, knowledge_context)
         _append_stage_log(state, "generating_project", "completed", f"{len(manifest.files)} files written")
     except Exception as exc:  # noqa: BLE001
         state["status"] = ProjectStatus.FAILED.value
@@ -236,9 +259,55 @@ def generate(project_id: str) -> Dict[str, Any]:
     state["output_dir"] = output_dir
     state["zip_path"] = zip_path
     state["status"] = ProjectStatus.VALIDATED.value if stage5.passed else ProjectStatus.VALIDATION_FAILED.value
+
+    if stage5.passed:
+        metrics = {}
+        metrics_path = os.path.join(output_dir, "outputs", "metrics.json")
+        if os.path.exists(metrics_path):
+            with open(metrics_path, "r", encoding="utf-8") as f:
+                metrics = json.load(f)
+        learning = learn_from_project(spec, project_id, state["manifest"], metrics)
+        state["knowledge_graph_learning"] = learning
+        _append_stage_log(
+            state,
+            "knowledge_graph_learning",
+            "completed",
+            f"{learning['component_count']} reusable component(s) stored",
+        )
+
     _save_state(project_id, state)
 
     return {"project_id": project_id, "status": state["status"], "manifest": state["manifest"]}
+
+
+@app.post("/api/projects/{project_id}/feedback")
+def submit_feedback(project_id: str, req: FeedbackRequest) -> Dict[str, Any]:
+    state = _get_state(project_id)
+    if state.get("status") not in {ProjectStatus.VALIDATED.value, ProjectStatus.SIMULATED.value}:
+        raise HTTPException(status_code=409, detail="feedback is accepted after a project has validated or simulated")
+
+    spec = SystemSpec.model_validate(state["spec"])
+    record = FeedbackRecord(
+        project_id=project_id,
+        project_name=spec.project.name,
+        **req.model_dump(),
+    )
+    state.setdefault("feedback", []).append(record.model_dump())
+    learning = record_feedback(record, spec)
+    state["knowledge_graph_feedback"] = learning
+    _append_stage_log(
+        state,
+        "user_feedback",
+        "completed",
+        f"feedback stored as {learning['component_id']}",
+    )
+    _save_state(project_id, state)
+    return {
+        "project_id": project_id,
+        "status": state["status"],
+        "feedback": record.model_dump(),
+        "knowledge_graph_update": learning,
+    }
 
 
 @app.get("/api/projects/{project_id}/status")
@@ -354,6 +423,11 @@ def download(project_id: str) -> FileResponse:
         raise HTTPException(status_code=409, detail="project has not been packaged yet")
     filename = os.path.basename(zip_path)
     return FileResponse(zip_path, media_type="application/zip", filename=filename)
+
+
+@app.get("/api/knowledge-graph/stats")
+def knowledge_graph_stats() -> Dict[str, Any]:
+    return graph_stats()
 
 
 @app.get("/api/projects/{project_id}/manifest")
