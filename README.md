@@ -47,7 +47,7 @@ Then, in the browser:
    diagram, config, four simulated fault scenarios with a live timeline,
    test results, and every generated file.
 5. **Download** the finished project as a self-contained ZIP.
-6. Generate a second similar project to see the **Engineering Knowledge Graph** reuse validated architecture, safety, simulation, validation, dashboard, deployment, metrics, and trade-off components from the first project.
+
 
 No API key is required — the default heuristic Specification Agent handles
 the whole industrial-monitoring domain deterministically. Set
@@ -61,7 +61,7 @@ the call fails or its output doesn't validate).
 Black Dragon Studio is prepared for the **Developer Tools** track: it is a tool
 for developers and Physical AI engineers that generates runnable repositories,
 validates them, exports them, and learns reusable engineering patterns from each
-validated project.
+
 
 For judges and reviewers:
 

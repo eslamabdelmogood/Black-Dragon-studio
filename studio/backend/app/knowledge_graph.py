@@ -12,14 +12,14 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from .models import SystemSpec
+
 from . import storage
 
 GRAPH_VERSION = "1.0"
 
 
 def _empty_graph() -> Dict[str, Any]:
-    return {"version": GRAPH_VERSION, "projects": [], "components": []}
+
 
 
 def _load_graph() -> Dict[str, Any]:
@@ -34,6 +34,7 @@ def _load_graph() -> Dict[str, Any]:
     graph.setdefault("version", GRAPH_VERSION)
     graph.setdefault("projects", [])
     graph.setdefault("components", [])
+
     return graph
 
 
@@ -271,11 +272,13 @@ def search_similar(spec: SystemSpec, limit: int = 5) -> List[Dict[str, Any]]:
     return scored[:limit]
 
 
+
 def graph_stats() -> Dict[str, Any]:
     graph = _load_graph()
     return {
         "version": graph.get("version", GRAPH_VERSION),
         "project_count": len(graph.get("projects", [])),
         "component_count": len(graph.get("components", [])),
+
         "component_types": sorted({c.get("type") for c in graph.get("components", []) if c.get("type")}),
     }

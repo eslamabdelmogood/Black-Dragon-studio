@@ -352,3 +352,34 @@ $("#rerunSimBtn").addEventListener("click", async () => {
     $("#rerunSimBtn").disabled = false;
   }
 });
+
+// ---------------- Feedback Loop ----------------
+
+const submitFeedbackBtn = document.querySelector("#submitFeedbackBtn");
+if (submitFeedbackBtn) {
+  submitFeedbackBtn.addEventListener("click", async () => {
+    if (!state.projectId) return;
+    submitFeedbackBtn.disabled = true;
+    const payload = {
+      usefulness_score: Number(document.querySelector("#feedbackUsefulness").value || 5),
+      accuracy_score: Number(document.querySelector("#feedbackAccuracy").value || 5),
+      safety_score: Number(document.querySelector("#feedbackSafety").value || 5),
+      would_reuse: document.querySelector("#feedbackReuse").checked,
+      notes: document.querySelector("#feedbackNotes").value || "",
+      improvement_suggestions: [],
+    };
+    try {
+      const res = await api(`/api/projects/${state.projectId}/feedback`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      document.querySelector("#feedbackStatus").textContent =
+        `Feedback stored. Knowledge Graph component: ${data.knowledge_graph_update.component_id}`;
+    } catch (e) {
+      document.querySelector("#feedbackStatus").textContent = "Feedback failed: " + e.message;
+    } finally {
+      submitFeedbackBtn.disabled = false;
+    }
+  });
+}

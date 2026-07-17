@@ -8,7 +8,7 @@ Black Dragon Studio is a developer tool for embedded, IoT, robotics, automation,
 and Physical AI engineers. It turns natural-language requirements into a
 validated starter repository with runtime code, sensor configuration,
 deterministic safety rules, simulation, tests, dashboard, documentation, and a
-ZIP export.
+
 
 ## One-sentence pitch
 
@@ -114,7 +114,7 @@ five samples. Shut down when vibration reaches 10 mm/s or temperature exceeds
 - Five validation stages before export.
 - Generated simulation results and dashboard timeline.
 - Engineering-team role handoffs.
-- Engineering Knowledge Graph learning from project 1 and reusing components in
+
   project 2.
 - Hard-mode validation via `python scripts/hard_mode_test.py` to demonstrate
   generated ZIPs run independently after extraction.

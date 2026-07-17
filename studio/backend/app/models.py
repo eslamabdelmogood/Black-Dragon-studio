@@ -280,6 +280,7 @@ class EngineeringAgentResult(BaseModel):
     handoff_to: Optional[str] = None
 
 
+
 class GenerationManifest(BaseModel):
     project_id: str
     project_name: str

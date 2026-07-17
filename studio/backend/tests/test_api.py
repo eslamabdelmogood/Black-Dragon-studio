@@ -121,3 +121,4 @@ def test_knowledge_graph_learns_and_reuses_components():
     context = second_generated.json()["manifest"]["knowledge_context"]
     assert context
     assert {item["component_type"] for item in context}
+

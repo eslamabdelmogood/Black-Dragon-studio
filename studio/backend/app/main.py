@@ -23,8 +23,10 @@ from pydantic import BaseModel
 
 from . import generator, packager, storage, validator
 from .engineering_team import run_engineering_team, summarize_agent_results
-from .knowledge_graph import graph_stats, learn_from_project, search_similar
+
 from .models import (
+    FeedbackRecord,
+    FeedbackRequest,
     GenerationManifest,
     ProjectStatus,
     SpecifyRequest,
@@ -276,6 +278,36 @@ def generate(project_id: str) -> Dict[str, Any]:
     _save_state(project_id, state)
 
     return {"project_id": project_id, "status": state["status"], "manifest": state["manifest"]}
+
+
+@app.post("/api/projects/{project_id}/feedback")
+def submit_feedback(project_id: str, req: FeedbackRequest) -> Dict[str, Any]:
+    state = _get_state(project_id)
+    if state.get("status") not in {ProjectStatus.VALIDATED.value, ProjectStatus.SIMULATED.value}:
+        raise HTTPException(status_code=409, detail="feedback is accepted after a project has validated or simulated")
+
+    spec = SystemSpec.model_validate(state["spec"])
+    record = FeedbackRecord(
+        project_id=project_id,
+        project_name=spec.project.name,
+        **req.model_dump(),
+    )
+    state.setdefault("feedback", []).append(record.model_dump())
+    learning = record_feedback(record, spec)
+    state["knowledge_graph_feedback"] = learning
+    _append_stage_log(
+        state,
+        "user_feedback",
+        "completed",
+        f"feedback stored as {learning['component_id']}",
+    )
+    _save_state(project_id, state)
+    return {
+        "project_id": project_id,
+        "status": state["status"],
+        "feedback": record.model_dump(),
+        "knowledge_graph_update": learning,
+    }
 
 
 @app.get("/api/projects/{project_id}/status")

@@ -10,7 +10,6 @@ This script intentionally exercises the project like a skeptical hackathon judge
 from __future__ import annotations
 
 import io
-
 import os
 import shutil
 import subprocess
@@ -37,6 +36,7 @@ os.environ.pop("OPENAI_API_KEY", None)
 os.environ["BDS_WORKSPACE_ROOT"] = str(WORKSPACE)
 shutil.rmtree(WORKSPACE, ignore_errors=True)
 sys.path.insert(0, str(BACKEND))
+
 
 
 from fastapi.testclient import TestClient  # noqa: E402
@@ -139,6 +139,7 @@ def generate_lifecycle(prompt: str, index: int) -> Dict[str, object]:
     results = assert_ok(client.get(f"/api/projects/{project_id}/results"), f"results[{index}]").json()
     assert results["metrics"], "simulation metrics must be present"
 
+
     download = assert_ok(client.get(f"/api/projects/{project_id}/download"), f"download[{index}]")
     verify_generated_project(project_id, download.content)
 
@@ -159,6 +160,7 @@ def main() -> None:
     stats = assert_ok(client.get("/api/knowledge-graph/stats"), "knowledge stats").json()
     assert stats["project_count"] == len(PROMPTS), stats
     assert stats["component_count"] >= len(PROMPTS) * 5, stats
+
     assert any(s["knowledge_context_count"] > 0 for s in summaries[1:]), summaries
 
     print("Black Dragon Studio hard-mode test passed")
