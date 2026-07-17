@@ -12,14 +12,19 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-
+from .models import FeedbackRecord, SystemSpec
 from . import storage
 
 GRAPH_VERSION = "1.0"
 
 
 def _empty_graph() -> Dict[str, Any]:
-
+    return {
+        "version": GRAPH_VERSION,
+        "projects": [],
+        "components": [],
+        "feedback": [],
+    }
 
 
 def _load_graph() -> Dict[str, Any]:
@@ -34,7 +39,7 @@ def _load_graph() -> Dict[str, Any]:
     graph.setdefault("version", GRAPH_VERSION)
     graph.setdefault("projects", [])
     graph.setdefault("components", [])
-
+    graph.setdefault("feedback", [])
     return graph
 
 
@@ -272,6 +277,56 @@ def search_similar(spec: SystemSpec, limit: int = 5) -> List[Dict[str, Any]]:
     return scored[:limit]
 
 
+def record_feedback(feedback: FeedbackRecord, spec: SystemSpec) -> Dict[str, Any]:
+    """Store user feedback as graph knowledge after a validated project.
+
+    Feedback is deliberately structured as reusable engineering experience: it
+    records quality scores, reuse intent, notes, and improvement suggestions.
+    That feedback becomes both an auditable feedback record and a searchable
+    `user_feedback` graph component for future projects.
+    """
+    graph = _load_graph()
+    payload = feedback.model_dump()
+    graph["feedback"].append(payload)
+
+    component = {
+        "id": _component_id(feedback.project_id, "user_feedback", feedback.submitted_at),
+        "type": "user_feedback",
+        "name": f"{feedback.project_name} user feedback",
+        "project_id": feedback.project_id,
+        "project_name": feedback.project_name,
+        "domain": spec.project.domain,
+        "target_platform": spec.project.target_platform,
+        "validated_at": feedback.submitted_at,
+        "summary": (
+            f"User feedback scores usefulness={feedback.usefulness_score}/5, "
+            f"accuracy={feedback.accuracy_score}/5, safety={feedback.safety_score}/5, "
+            f"would_reuse={feedback.would_reuse}."
+        ),
+        "tags": [
+            "feedback",
+            "user_feedback",
+            spec.project.domain,
+            spec.project.target_platform,
+            *(s.type for s in spec.sensors),
+        ],
+        "reusable_fields": {
+            "usefulness_score": feedback.usefulness_score,
+            "accuracy_score": feedback.accuracy_score,
+            "safety_score": feedback.safety_score,
+            "would_reuse": feedback.would_reuse,
+            "notes": feedback.notes,
+            "improvement_suggestions": feedback.improvement_suggestions,
+        },
+    }
+    graph["components"].append(component)
+    _save_graph(graph)
+    return {
+        "feedback_count": len(graph["feedback"]),
+        "component_id": component["id"],
+        "component_count": len(graph["components"]),
+    }
+
 
 def graph_stats() -> Dict[str, Any]:
     graph = _load_graph()
@@ -279,6 +334,6 @@ def graph_stats() -> Dict[str, Any]:
         "version": graph.get("version", GRAPH_VERSION),
         "project_count": len(graph.get("projects", [])),
         "component_count": len(graph.get("components", [])),
-
+        "feedback_count": len(graph.get("feedback", [])),
         "component_types": sorted({c.get("type") for c in graph.get("components", []) if c.get("type")}),
     }
