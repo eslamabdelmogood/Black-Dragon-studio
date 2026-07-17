@@ -7,7 +7,10 @@ Runs the full lifecycle in-process with FastAPI TestClient:
 """
 from __future__ import annotations
 
-
+import importlib.util
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -21,6 +24,45 @@ shutil.rmtree(WORKSPACE, ignore_errors=True)
 sys.path.insert(0, str(BACKEND))
 
 
+def ensure_backend_dependencies() -> None:
+    """Install backend dependencies when the script is run from a fresh Codespace.
+
+    Judges often run this script before creating a virtual environment.
+    Auto-installing the backend requirements makes the judge scripts
+    self-contained while still using the repository's pinned requirements file.
+    """
+    required_modules = ("fastapi", "httpx", "pydantic", "jinja2", "yaml")
+    missing = [module for module in required_modules if importlib.util.find_spec(module) is None]
+    if not missing:
+        return
+
+    requirements = BACKEND / "requirements.txt"
+    print(
+        f"Missing backend dependencies ({', '.join(missing)}); "
+        f"installing from {requirements}...",
+        flush=True,
+    )
+    try:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "--disable-pip-version-check",
+                "-r",
+                str(requirements),
+            ]
+        )
+    except subprocess.CalledProcessError as exc:
+        raise SystemExit(
+            "Could not auto-install backend dependencies. Run:\n"
+            f"  {sys.executable} -m pip install -r {requirements}\n"
+            "Then re-run this script."
+        ) from exc
+
+
+ensure_backend_dependencies()
 
 from fastapi.testclient import TestClient  # noqa: E402
 from app.main import app  # noqa: E402
