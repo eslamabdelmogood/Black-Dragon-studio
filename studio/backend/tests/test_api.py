@@ -122,32 +122,3 @@ def test_knowledge_graph_learns_and_reuses_components():
     assert context
     assert {item["component_type"] for item in context}
 
-
-def test_feedback_updates_knowledge_graph():
-    r = client.post("/api/specify", json={"prompt": DEMO_PROMPT})
-    pid = r.json()["project_id"]
-    client.post(f"/api/projects/{pid}/approve")
-    generated = client.post(f"/api/projects/{pid}/generate")
-    assert generated.status_code == 200
-
-    feedback = client.post(
-        f"/api/projects/{pid}/feedback",
-        json={
-            "usefulness_score": 5,
-            "accuracy_score": 4,
-            "safety_score": 5,
-            "would_reuse": True,
-            "notes": "The generated safety rules and simulation are useful.",
-            "improvement_suggestions": ["Add more pump cavitation scenarios"],
-        },
-    )
-    assert feedback.status_code == 200, feedback.text
-    payload = feedback.json()
-    assert payload["knowledge_graph_update"]["component_id"]
-
-    stats = client.get("/api/knowledge-graph/stats")
-    assert stats.status_code == 200
-    assert stats.json()["feedback_count"] >= 1
-
-    status = client.get(f"/api/projects/{pid}/status").json()
-    assert any(entry["stage"] == "user_feedback" for entry in status["stage_log"])

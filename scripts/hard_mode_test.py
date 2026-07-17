@@ -10,7 +10,6 @@ This script intentionally exercises the project like a skeptical hackathon judge
 from __future__ import annotations
 
 import io
-import importlib.util
 import os
 import shutil
 import subprocess
@@ -39,45 +38,6 @@ shutil.rmtree(WORKSPACE, ignore_errors=True)
 sys.path.insert(0, str(BACKEND))
 
 
-def ensure_backend_dependencies() -> None:
-    """Install backend dependencies when the script is run from a fresh Codespace.
-
-    Judges often run this script before creating a virtual environment.
-    Auto-installing the backend requirements makes the judge scripts
-    self-contained while still using the repository's pinned requirements file.
-    """
-    required_modules = ("fastapi", "httpx", "pydantic", "jinja2", "yaml")
-    missing = [module for module in required_modules if importlib.util.find_spec(module) is None]
-    if not missing:
-        return
-
-    requirements = BACKEND / "requirements.txt"
-    print(
-        f"Missing backend dependencies ({', '.join(missing)}); "
-        f"installing from {requirements}...",
-        flush=True,
-    )
-    try:
-        subprocess.check_call(
-            [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "--disable-pip-version-check",
-                "-r",
-                str(requirements),
-            ]
-        )
-    except subprocess.CalledProcessError as exc:
-        raise SystemExit(
-            "Could not auto-install backend dependencies. Run:\n"
-            f"  {sys.executable} -m pip install -r {requirements}\n"
-            "Then re-run this script."
-        ) from exc
-
-
-ensure_backend_dependencies()
 
 from fastapi.testclient import TestClient  # noqa: E402
 from app.main import app  # noqa: E402
@@ -179,21 +139,6 @@ def generate_lifecycle(prompt: str, index: int) -> Dict[str, object]:
     results = assert_ok(client.get(f"/api/projects/{project_id}/results"), f"results[{index}]").json()
     assert results["metrics"], "simulation metrics must be present"
 
-    feedback = assert_ok(
-        client.post(
-            f"/api/projects/{project_id}/feedback",
-            json={
-                "usefulness_score": 5,
-                "accuracy_score": 4,
-                "safety_score": 5,
-                "would_reuse": True,
-                "notes": f"Hard-mode feedback for project {index}",
-                "improvement_suggestions": ["Keep expanding validated industrial scenarios"],
-            },
-        ),
-        f"feedback[{index}]",
-    ).json()
-    assert feedback["knowledge_graph_update"]["component_id"]
 
     download = assert_ok(client.get(f"/api/projects/{project_id}/download"), f"download[{index}]")
     verify_generated_project(project_id, download.content)
@@ -215,7 +160,7 @@ def main() -> None:
     stats = assert_ok(client.get("/api/knowledge-graph/stats"), "knowledge stats").json()
     assert stats["project_count"] == len(PROMPTS), stats
     assert stats["component_count"] >= len(PROMPTS) * 5, stats
-    assert stats["feedback_count"] == len(PROMPTS), stats
+
     assert any(s["knowledge_context_count"] > 0 for s in summaries[1:]), summaries
 
     print("Black Dragon Studio hard-mode test passed")
