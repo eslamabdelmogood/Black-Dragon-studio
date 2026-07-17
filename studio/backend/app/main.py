@@ -23,7 +23,7 @@ from pydantic import BaseModel
 
 from . import generator, packager, storage, validator
 from .engineering_team import run_engineering_team, summarize_agent_results
-
+from .knowledge_graph import graph_stats, learn_from_project, record_feedback, search_similar
 from .models import (
     FeedbackRecord,
     FeedbackRequest,
@@ -52,29 +52,7 @@ GENERATION_STAGES = [
     "parsing_requirements",
     "validating_specification",
     "generating_project",
-    "running_tests",
-    "running_simulation",
-    "packaging_project",
-]
-
-
-# --------------------------------------------------------------------------
-# Helpers
-# --------------------------------------------------------------------------
-
-def _now() -> str:
-    return datetime.datetime.now(datetime.timezone.utc).isoformat()
-
-
-def _get_state(project_id: str) -> Dict[str, Any]:
-    try:
-        return storage.load_state(project_id)
-    except storage.UnknownProjectError:
-        raise HTTPException(status_code=404, detail=f"unknown project_id '{project_id}'")
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-
-
+@@ -74,62 +78,71 @@ def _get_state(project_id: str) -> Dict[str, Any]:
 def _save_state(project_id: str, state: Dict[str, Any]) -> None:
     state["updated_at"] = _now()
     storage.save_state(project_id, state)
@@ -146,23 +124,7 @@ class SpecUpdateRequest(BaseModel):
     spec: Dict[str, Any]
 
 
-@app.put("/api/projects/{project_id}/spec")
-def update_spec(project_id: str, req: SpecUpdateRequest) -> Dict[str, Any]:
-    state = _get_state(project_id)
-    if state["status"] not in {ProjectStatus.NEEDS_APPROVAL.value, ProjectStatus.DRAFT.value}:
-        raise HTTPException(status_code=409, detail="spec can only be edited before approval")
-    try:
-        validated = SystemSpec.model_validate(req.spec)
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=422, detail=f"invalid spec: {exc}")
-    state["spec"] = json.loads(validated.model_dump_json())
-    _save_state(project_id, state)
-    return {"project_id": project_id, "status": state["status"], "spec": state["spec"]}
-
-
-@app.post("/api/projects/{project_id}/approve")
-def approve(project_id: str) -> Dict[str, Any]:
-    state = _get_state(project_id)
+@@ -153,58 +166,68 @@ def approve(project_id: str) -> Dict[str, Any]:
     if state["status"] not in {ProjectStatus.NEEDS_APPROVAL.value, ProjectStatus.DRAFT.value}:
         raise HTTPException(status_code=409, detail=f"cannot approve from status '{state['status']}'")
     try:
@@ -205,7 +167,7 @@ def generate(project_id: str) -> Dict[str, Any]:
 
     # Stage: generating_project
     try:
-        manifest = generator.generate_project(spec, project_id, output_dir, engineering_agents, knowledge_context)
+         manifest = generator.generate_project(spec, project_id, output_dir, engineering_agents, knowledge_context)
         _append_stage_log(state, "generating_project", "completed", f"{len(manifest.files)} files written")
     except Exception as exc:  # noqa: BLE001
         state["status"] = ProjectStatus.FAILED.value
@@ -231,9 +193,7 @@ def generate(project_id: str) -> Dict[str, Any]:
     manifest.validation = results
 
     if not all_pre_passed:
-        state["status"] = ProjectStatus.VALIDATION_FAILED.value
-        state["manifest"] = json.loads(manifest.model_dump_json())
-        state["output_dir"] = output_dir
+@@ -214,55 +237,101 @@ def generate(project_id: str) -> Dict[str, Any]:
         _save_state(project_id, state)
         return {
             "project_id": project_id,
@@ -335,71 +295,7 @@ def simulate(project_id: str) -> Dict[str, Any]:
     sim_path = os.path.join(output_dir, "simulation", "simulator.py")
     proc = subprocess.run(
         [sys.executable, "simulator.py"],
-        cwd=os.path.join(output_dir, "simulation"),
-        capture_output=True,
-        text=True,
-        timeout=int(os.environ.get("BDS_SUBPROCESS_TIMEOUT", "60")),
-    )
-    if proc.returncode != 0:
-        raise HTTPException(status_code=500, detail=f"simulation failed: {proc.stderr[-2000:]}")
-
-    state["status"] = ProjectStatus.SIMULATED.value
-    _append_stage_log(state, "running_simulation", "completed", "manual re-run via /simulate")
-    _save_state(project_id, state)
-
-    return get_results(project_id)
-
-
-@app.get("/api/projects/{project_id}/results")
-def get_results(project_id: str) -> Dict[str, Any]:
-    state = _get_state(project_id)
-    output_dir = state.get("output_dir")
-    if not output_dir:
-        raise HTTPException(status_code=409, detail="project has not been generated yet")
-
-    metrics_path = os.path.join(output_dir, "outputs", "metrics.json")
-    results_path = os.path.join(output_dir, "outputs", "simulation_results.json")
-    if not (os.path.exists(metrics_path) and os.path.exists(results_path)):
-        raise HTTPException(status_code=409, detail="no simulation results yet; run /generate or /simulate first")
-
-    with open(metrics_path, "r", encoding="utf-8") as f:
-        metrics = json.load(f)
-    with open(results_path, "r", encoding="utf-8") as f:
-        results = json.load(f)
-
-    return {
-        "project_id": project_id,
-        "metrics": metrics,
-        "scenarios": results,
-        "test_results": state.get("manifest", {}).get("validation", []),
-    }
-
-
-# --------------------------------------------------------------------------
-# Screen 4: Project Workspace -- Files tab
-# --------------------------------------------------------------------------
-
-@app.get("/api/projects/{project_id}/files")
-def list_files(project_id: str) -> Dict[str, Any]:
-    state = _get_state(project_id)
-    manifest = state.get("manifest")
-    if not manifest:
-        raise HTTPException(status_code=409, detail="project has not been generated yet")
-    return {"project_id": project_id, "files": manifest["files"]}
-
-
-@app.get("/api/projects/{project_id}/files/{file_path:path}")
-def get_file(project_id: str, file_path: str) -> Dict[str, Any]:
-    state = _get_state(project_id)
-    output_dir = state.get("output_dir")
-    if not output_dir:
-        raise HTTPException(status_code=409, detail="project has not been generated yet")
-
-    # prevent path traversal: resolve and ensure the path stays inside output_dir
-    full_path = os.path.normpath(os.path.join(output_dir, file_path))
-    if not full_path.startswith(os.path.normpath(output_dir) + os.sep):
-        raise HTTPException(status_code=400, detail="invalid file path")
-    if not os.path.isfile(full_path):
+@@ -334,46 +403,51 @@ def get_file(project_id: str, file_path: str) -> Dict[str, Any]:
         raise HTTPException(status_code=404, detail="file not found")
 
     try:
