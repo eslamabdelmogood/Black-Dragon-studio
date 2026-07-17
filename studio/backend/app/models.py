@@ -249,7 +249,7 @@ class SystemSpec(BaseModel):
 # Project envelope (studio-side bookkeeping, not part of the generated repo)
 # --------------------------------------------------------------------------
 
-class ClarifyingQuestion(BaseModel):
+ class ClarifyingQuestion(BaseModel):
     field: str
     question: str
     default_used: Optional[str] = None
@@ -279,6 +279,20 @@ class EngineeringAgentResult(BaseModel):
     outputs: List[str] = Field(default_factory=list)
     handoff_to: Optional[str] = None
 
+
+class FeedbackRequest(BaseModel):
+    usefulness_score: int = Field(..., ge=1, le=5)
+    accuracy_score: int = Field(..., ge=1, le=5)
+    safety_score: int = Field(..., ge=1, le=5)
+    would_reuse: bool = Field(default=True)
+    notes: str = Field(default="", max_length=2000)
+    improvement_suggestions: List[str] = Field(default_factory=list, max_length=10)
+
+
+class FeedbackRecord(FeedbackRequest):
+    project_id: str
+    project_name: str
+    submitted_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class GenerationManifest(BaseModel):
