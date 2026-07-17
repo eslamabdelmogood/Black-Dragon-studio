@@ -52,7 +52,6 @@ GENERATION_STAGES = [
     "parsing_requirements",
     "validating_specification",
     "generating_project",
-@@ -74,62 +78,71 @@ def _get_state(project_id: str) -> Dict[str, Any]:
 def _save_state(project_id: str, state: Dict[str, Any]) -> None:
     state["updated_at"] = _now()
     storage.save_state(project_id, state)
