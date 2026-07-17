@@ -1,12 +1,4 @@
-# Black Dragon Studio
-
-**An autonomous AI engineering team that turns a product idea into a production-ready Physical AI project.**
-
-Building Physical AI systems today requires multiple engineering disciplines
-working sequentially — requirements → architecture → code → simulation →
-tests → deployment. Black Dragon Studio compresses that pipeline: describe
-the system you need to monitor in plain English, review the structured
-specification it produces, approve it, and get back a validated, tested,
+@@ -10,77 +10,129 @@ specification it produces, approve it, and get back a validated, tested,
 simulated, documented, runnable project you can download as a ZIP.
 
 This repository is the merge of two prior projects into one buildable
@@ -32,7 +24,8 @@ was deliberately simplified for this pass.
 cd studio/backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-
+pytest -q                                   # 24 backend tests
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # open http://localhost:8000
 ```
 
@@ -47,7 +40,8 @@ Then, in the browser:
    diagram, config, four simulated fault scenarios with a live timeline,
    test results, and every generated file.
 5. **Download** the finished project as a self-contained ZIP.
-
+6. Submit **Feedback Loop** scores/notes so user feedback updates the Engineering Knowledge Graph.
+7. Generate a second similar project to see the **Engineering Knowledge Graph** reuse validated architecture, safety, simulation, validation, dashboard, deployment, metrics, and trade-off components from the first project.
 
 No API key is required — the default heuristic Specification Agent handles
 the whole industrial-monitoring domain deterministically. Set
@@ -61,7 +55,7 @@ the call fails or its output doesn't validate).
 Black Dragon Studio is prepared for the **Developer Tools** track: it is a tool
 for developers and Physical AI engineers that generates runnable repositories,
 validates them, exports them, and learns reusable engineering patterns from each
-
+validated project and from user feedback after validation.
 
 For judges and reviewers:
 
@@ -80,7 +74,9 @@ docker compose up --build
 See [`DEVPOST_SUBMISSION.md`](DEVPOST_SUBMISSION.md) for the project pitch,
 track rationale, GPT-5.6/Codex usage notes, supported platforms, demo video
 script, judge test plan, and submission checklist. Use `scripts/hard_mode_test.py`
-
+for a competition-style stress run before final submission. The judge scripts
+will auto-install backend requirements if `fastapi` is missing; if network
+access is blocked, run `pip install -r studio/backend/requirements.txt` first.
 
 ## How GPT-5.6 and Codex are used
 
@@ -125,6 +121,7 @@ black-dragon-studio/
 └── reference-runtime/       # merged nomad-sentinel / Black-Dragon-Runtime project
 ```
 
+
 ## Honest status
 
 This is a working MVP of the full pipeline for **one domain** (industrial
@@ -132,3 +129,4 @@ equipment monitoring: pumps, motors, bearings, pipelines) with **one
 template**. It is not the full multi-template, multi-agent Codex
 orchestration described in the constitution's long-term vision — see
 `BUILD_LOG.md` for the specific scope decisions and what a v2 would add.
+
