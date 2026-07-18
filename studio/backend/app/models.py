@@ -123,11 +123,8 @@ class SensorSpec(BaseModel):
         lo, hi = self.normal_range
         if lo > hi:
             raise ValueError(f"sensor {self.id}: normal_range must be [low, high]")
-        if self.warning_threshold == self.critical_threshold:
-            raise ValueError(
-                f"sensor {self.id}: warning_threshold and critical_threshold must differ"
-            )
-
+        # Equal warning and critical thresholds are allowed. This means the
+        # sensor transitions directly to the critical state at that boundary.
         # Direction-agnostic check: critical must be further from the normal
         # band than warning, in the same direction
         band_mid = (lo + hi) / 2.0
